@@ -34,14 +34,26 @@ public class PrestashopApiClient {
     private static final Logger logger = LoggerFactory.getLogger(PrestashopApiClient.class);
 
     private final String baseUrl;
+    private final String apiKey;
     private final HttpClient httpClient;
 
     /**
-     * Initialize API client with base URL from config.
+     * Initialize API client with base URL and API key from config.
+     *
+     * API key should be configured in src/test/resources/config.properties:
+     * api.key=your_api_key_here
+     *
+     * @throws IllegalStateException if API key is not configured
      */
     public PrestashopApiClient() {
-        this.baseUrl = ConfigLoader.getProperty("api.base.url", "https://demo.prestashop.com/api");
+        this.baseUrl = ConfigLoader.getProperty("api.base.url", "http://145.239.29.235/api");
+        this.apiKey = ConfigLoader.getProperty("api.key", "");
         this.httpClient = HttpClient.newHttpClient();
+
+        if (apiKey == null || apiKey.trim().isEmpty()) {
+            logger.warn("API key not configured in config.properties. Set 'api.key' property to enable API operations.");
+        }
+
         logger.info("Prestashop API client initialized with base URL: {}", baseUrl);
     }
 
@@ -155,7 +167,7 @@ public class PrestashopApiClient {
     }
 
     /**
-     * Helper method to make HTTP requests (internal use).
+     * Helper method to make HTTP requests with API authentication (internal use).
      *
      * @param method HTTP method (GET, POST, DELETE, etc.)
      * @param endpoint API endpoint path (e.g., "/customers")
@@ -169,6 +181,14 @@ public class PrestashopApiClient {
         HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                 .uri(new URI(url))
                 .header("Content-Type", "application/json");
+
+        // Add API key authentication header if configured
+        if (apiKey != null && !apiKey.trim().isEmpty()) {
+            requestBuilder.header("Authorization", "Bearer " + apiKey);
+            logger.debug("API request includes authorization header");
+        } else {
+            logger.warn("API key not configured - request will be unauthenticated");
+        }
 
         // Set method and body based on HTTP verb
         switch (method.toUpperCase()) {
