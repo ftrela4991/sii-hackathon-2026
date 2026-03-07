@@ -32,8 +32,6 @@ public class AdminProductListPage extends BasePage {
             "//div[contains(@class,'table-responsive') or contains(@class,'product-catalog')]//input[@type='text']"
             + " | //input[@name='product[name]']"
             + " | //div[@id='main-div']//input[@type='text']");
-    private static final By LOADING_SPINNER = By.xpath(
-            "//*[contains(@class,'spinner') or contains(@class,'loading')]");
 
     public AdminProductListPage(WebDriver driver) {
         super(driver);
