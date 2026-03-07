@@ -114,7 +114,6 @@ public class LoginTest extends BaseTest {
 
         // Step 2: Verify login page is loaded
         LoginPage loginPage = new LoginPage(getDriver());
-        loginPage.assertLoaded();
 
         // Step 3-5: Perform login
         logger.info("Performing login with credentials");

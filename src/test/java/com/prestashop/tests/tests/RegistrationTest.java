@@ -108,7 +108,7 @@ public class RegistrationTest extends BaseTest {
         // R-1: Verify user stays on homepage (not redirected to /my-account)
         String currentUrl = getDriver().getCurrentUrl();
         logger.info("Current URL after registration: {}", currentUrl);
-        assertTrue(currentUrl.equals(baseUrl) || currentUrl.equals(baseUrl.replaceAll("/$", "")),
+        assertTrue(currentUrl.equals(baseUrl + "/"),
                 "Expected URL to be homepage '" + baseUrl + "' after registration, but actual URL was: " + currentUrl);
         logger.info("✓ R-1 Assertion passed: URL is homepage");
 

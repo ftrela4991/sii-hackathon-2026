@@ -22,7 +22,7 @@ public class LoginPage extends BasePage {
     private static final By PASSWORD_INPUT = By.id("field-password");
     private static final By SIGNIN_BUTTON = By.id("submit-login");
     // Fallback to h1 if no data-testid available (page verification)
-    private static final By LOGIN_HEADER = By.cssSelector("h1.page-title");
+    private static final By LOGIN_HEADER = By.cssSelector("header-top");
 
     public LoginPage(WebDriver driver) {
         super(driver);
