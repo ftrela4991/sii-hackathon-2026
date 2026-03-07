@@ -12,6 +12,10 @@ import org.slf4j.LoggerFactory;
 /**
  * Factory for creating WebDriver instances with appropriate capabilities.
  * Uses WebDriver Manager to automatically download and manage browser drivers.
+ *
+ * THREAD SAFETY: Each test thread must have its own WebDriver instance.
+ * Use ThreadLocal in BaseTest to store per-thread drivers. This factory
+ * is thread-safe for creating drivers in parallel execution.
  */
 public class DriverFactory {
     private static final Logger logger = LoggerFactory.getLogger(DriverFactory.class);
@@ -35,7 +39,7 @@ public class DriverFactory {
                 break;
         }
 
-        logger.info("WebDriver created for browser: {}", browserType);
+        logger.info("WebDriver created for browser: {}", browserType.toLowerCase());
         return driver;
     }
 
@@ -48,17 +52,32 @@ public class DriverFactory {
 
         // Read headless setting from config (default: false)
         String headless = ConfigLoader.getProperty("browser.headless", "false");
+        String width = ConfigLoader.getProperty("browser.window.width", "1920");
+        String height = ConfigLoader.getProperty("browser.window.height", "1080");
+        logger.debug("Chrome config - headless: {}, window: {}x{}", headless, width, height);
         if (Boolean.parseBoolean(headless)) {
             options.addArguments("--headless=new");
         }
 
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
+        options.addArguments("--disable-gpu");  // Stability in headless
+        if (Boolean.parseBoolean(headless)) {
+            options.addArguments("--disable-extensions");
+        }
+        options.addArguments("--disable-blink-features=AutomationControlled");
+        options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation"});
 
         // Window size
-        String width = ConfigLoader.getProperty("browser.window.width", "1920");
-        String height = ConfigLoader.getProperty("browser.window.height", "1080");
-        options.addArguments(String.format("--window-size=%s,%s", width, height));
+        try {
+            int widthVal = Integer.parseInt(width);
+            int heightVal = Integer.parseInt(height);
+            if (widthVal > 0 && heightVal > 0) {
+                options.addArguments(String.format("--window-size=%d,%d", widthVal, heightVal));
+            }
+        } catch (NumberFormatException e) {
+            logger.warn("Invalid window size config: {}x{}, using defaults", width, height);
+        }
 
         return new ChromeDriver(options);
     }
@@ -88,7 +107,7 @@ public class DriverFactory {
                 driver.quit();
                 logger.info("WebDriver closed successfully");
             } catch (Exception e) {
-                logger.warn("Error closing WebDriver: {}", e.getMessage());
+                logger.warn("Error closing WebDriver", e);
             }
         }
     }
