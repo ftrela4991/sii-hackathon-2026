@@ -12,6 +12,9 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * API client for Prestashop test data setup.
@@ -127,6 +130,43 @@ public class PrestashopApiClient {
     }
 
     /**
+     * Find a customer ID by their email address via API.
+     *
+     * @param email customer email address
+     * @return Optional containing the customer ID if found, empty if not found
+     */
+    public Optional<Long> findCustomerIdByEmail(String email) {
+        logger.info("Finding customer ID for email: {}", email);
+        try {
+            String encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
+            String endpoint = "/customers?ws_key=" + apiKey + "&output_format=JSON&filter[email]=" + encodedEmail + "&display=[id]";
+            String response = makeRequest("GET", endpoint, null);
+
+            if (response == null || response.isEmpty()) {
+                logger.warn("No response from API when searching for customer with email: {}", email);
+                return Optional.empty();
+            }
+
+            // Parse JSON response to extract customer ID
+            // Example response: {"customers": [{"id": 123}]}
+            Pattern idPattern = Pattern.compile("\"id\"\\s*:\\s*(\\d+)");
+            Matcher matcher = idPattern.matcher(response);
+
+            if (matcher.find()) {
+                long customerId = Long.parseLong(matcher.group(1));
+                logger.info("Found customer ID {} for email: {}", customerId, email);
+                return Optional.of(customerId);
+            } else {
+                logger.info("No customer found with email: {}", email);
+                return Optional.empty();
+            }
+        } catch (Exception e) {
+            logger.error("Failed to find customer by email: {}", email, e);
+            return Optional.empty();
+        }
+    }
+
+    /**
      * Delete a customer via API (cleanup).
      *
      * @param customerId customer ID to delete
@@ -135,13 +175,14 @@ public class PrestashopApiClient {
     public boolean deleteCustomer(long customerId) {
         logger.info("Deleting customer: {}", customerId);
         try {
-            // TODO: Implement DELETE /customers/{id} endpoint
-            // Parse response and return success/failure
+            String endpoint = "/customers/" + customerId + "?ws_key=" + apiKey;
+            String response = makeRequest("DELETE", endpoint, null);
 
-            logger.warn("deleteCustomer not yet implemented");
-            return false;
+            // Successful deletion returns a response (typically empty or status)
+            logger.info("Customer {} deleted successfully", customerId);
+            return true;
         } catch (Exception e) {
-            logger.error("Failed to delete customer", e);
+            logger.error("Failed to delete customer: {}", customerId, e);
             return false;
         }
     }
@@ -169,8 +210,11 @@ public class PrestashopApiClient {
     /**
      * Helper method to make HTTP requests with API authentication (internal use).
      *
+     * Prestashop API uses query parameter authentication (ws_key) rather than header authentication.
+     * The ws_key should be included in the endpoint URL by the caller.
+     *
      * @param method HTTP method (GET, POST, DELETE, etc.)
-     * @param endpoint API endpoint path (e.g., "/customers")
+     * @param endpoint API endpoint path (e.g., "/customers?ws_key=...")
      * @param body request body for POST/PUT requests
      * @return HTTP response as string
      */
@@ -182,13 +226,8 @@ public class PrestashopApiClient {
                 .uri(new URI(url))
                 .header("Content-Type", "application/json");
 
-        // Add API key authentication header if configured
-        if (apiKey != null && !apiKey.trim().isEmpty()) {
-            requestBuilder.header("Authorization", "Bearer " + apiKey);
-            logger.debug("API request includes authorization header");
-        } else {
-            logger.warn("API key not configured - request will be unauthenticated");
-        }
+        // Note: Prestashop API uses ws_key query parameter (included in endpoint)
+        // rather than Authorization header. No header auth needed.
 
         // Set method and body based on HTTP verb
         switch (method.toUpperCase()) {

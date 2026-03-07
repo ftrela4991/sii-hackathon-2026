@@ -191,4 +191,22 @@ public abstract class BaseTest {
         driver.navigate().to(baseUrl);
         logger.info("Navigated to: {}", baseUrl);
     }
+
+    /**
+     * Navigate to a specific path relative to base URL (helper method).
+     * Requires WebDriver to be initialized (from @BeforeEach).
+     *
+     * @param path the path to navigate to (relative to base URL, e.g., "/registration", "/login")
+     * @throws IllegalStateException if WebDriver is not initialized
+     */
+    protected void navigateTo(String path) {
+        WebDriver driver = getDriver();
+        if (driver == null) {
+            throw new IllegalStateException("WebDriver is not initialized. Ensure setUp() has completed.");
+        }
+        String baseUrl = ConfigLoader.getProperty("base.url", "https://demo.prestashop.com");
+        String fullUrl = baseUrl + (path.startsWith("/") ? "" : "/") + path;
+        driver.navigate().to(fullUrl);
+        logger.info("Navigated to: {}", fullUrl);
+    }
 }
