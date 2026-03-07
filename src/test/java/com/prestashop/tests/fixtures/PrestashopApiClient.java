@@ -12,8 +12,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Base64;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -66,16 +65,9 @@ public class PrestashopApiClient {
     }
 
     /**
-     * Create a new customer via the registration form endpoint.
+     * Create a new customer via the Prestashop Webservice API.
      *
-     * Uses POST /registration with application/x-www-form-urlencoded body,
-     * mirroring the browser fetch that the real registration form submits.
-     * On success the server returns a 302 redirect; the customer ID is then
-     * fetched via the REST API using the email address.
-     *
-     * Required form fields (verified against live app):
-     *   id_gender, firstname, lastname, email, password,
-     *   psgdpr=1, customer_privacy=1, submitCreate=1
+     * Uses POST /api/customers with XML body and HTTP Basic Auth (API key as username).
      *
      * @param email    customer email address
      * @param password customer password
@@ -86,7 +78,7 @@ public class PrestashopApiClient {
     }
 
     /**
-     * Create a new customer via the registration form endpoint with explicit name.
+     * Create a new customer via the Prestashop Webservice API with explicit name.
      *
      * @param email     customer email address
      * @param password  customer password
@@ -95,60 +87,42 @@ public class PrestashopApiClient {
      * @return customer ID if created successfully, -1 otherwise
      */
     public long createCustomer(String email, String password, String firstName, String lastName) {
-        logger.info("Creating customer via registration form: {}", email);
+        logger.info("Creating customer via Webservice API: {}", email);
         try {
-            String registrationUrl = ConfigLoader.getProperty("base.url", "http://145.239.29.235/")
-                    + "/registration";
+            String xmlBody = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                    + "<prestashop xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n"
+                    + "  <customer>\n"
+                    + "    <id_gender><![CDATA[1]]></id_gender>\n"
+                    + "    <firstname><![CDATA[" + firstName + "]]></firstname>\n"
+                    + "    <lastname><![CDATA[" + lastName + "]]></lastname>\n"
+                    + "    <email><![CDATA[" + email + "]]></email>\n"
+                    + "    <passwd><![CDATA[" + password + "]]></passwd>\n"
+                    + "    <id_default_group><![CDATA[3]]></id_default_group>\n"
+                    + "    <active><![CDATA[1]]></active>\n"
+                    + "  </customer>\n"
+                    + "</prestashop>";
 
-            // Build form body identical to the browser POST observed via DevTools:
-            // id_gender=1&firstname=...&lastname=...&email=...&password=...
-            // &birthday=&psgdpr=1&customer_privacy=1&submitCreate=1
-            String formBody = "id_gender=1"
-                    + "&firstname=" + URLEncoder.encode(firstName, StandardCharsets.UTF_8)
-                    + "&lastname="  + URLEncoder.encode(lastName,  StandardCharsets.UTF_8)
-                    + "&email="     + URLEncoder.encode(email,     StandardCharsets.UTF_8)
-                    + "&password="  + URLEncoder.encode(password,  StandardCharsets.UTF_8)
-                    + "&birthday="
-                    + "&psgdpr=1"
-                    + "&customer_privacy=1"
-                    + "&submitCreate=1";
+            String response = makeRequest("POST", "/customers?output_format=JSON", xmlBody, "text/xml");
 
-            // Do NOT follow redirects — successful registration returns HTTP 302.
-            // If we follow the redirect we lose the status code and cannot detect errors.
-            HttpClient nonRedirectingClient = HttpClient.newBuilder()
-                    .followRedirects(HttpClient.Redirect.NEVER)
-                    .build();
+            if (response == null) {
+                logger.error("Customer creation failed for email: {}", email);
+                return -1;
+            }
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(new URI(registrationUrl))
-                    .header("Content-Type", "application/x-www-form-urlencoded")
-                    .POST(HttpRequest.BodyPublishers.ofString(formBody))
-                    .build();
+            // Parse JSON response to extract customer ID
+            Pattern idPattern = Pattern.compile("\"id\"\\s*:\\s*(\\d+)");
+            Matcher matcher = idPattern.matcher(response);
 
-            HttpResponse<String> response = nonRedirectingClient.send(
-                    request, HttpResponse.BodyHandlers.ofString());
-
-            logger.debug("Registration response status: {}", response.statusCode());
-
-            // Prestashop returns 302 on successful registration
-            if (response.statusCode() == 302 || response.statusCode() == 301) {
-                // Retrieve the customer ID from the REST API using the email
-                Optional<Long> customerId = findCustomerIdByEmail(email);
-                if (customerId.isPresent()) {
-                    logger.info("Customer created with ID {} for email: {}", customerId.get(), email);
-                    return customerId.get();
-                } else {
-                    logger.warn("Registration succeeded ({}), but customer ID not found for: {}",
-                            response.statusCode(), email);
-                    return -1;
-                }
+            if (matcher.find()) {
+                long customerId = Long.parseLong(matcher.group(1));
+                logger.info("Customer created with ID {} for email: {}", customerId, email);
+                return customerId;
             } else {
-                logger.error("Registration failed — unexpected status {} for email: {}",
-                        response.statusCode(), email);
+                logger.warn("Customer creation response did not contain an ID. Response: {}", response);
                 return -1;
             }
         } catch (Exception e) {
-            logger.error("Failed to create customer via registration form", e);
+            logger.error("Failed to create customer via Webservice API", e);
             return -1;
         }
     }
@@ -168,12 +142,19 @@ public class PrestashopApiClient {
     /**
      * Create a new product via the Prestashop admin panel.
      *
-     * Flow:
-     * 1. Ensure admin session is active (login once, reuse session)
-     * 2. GET the "new product" page — Prestashop creates a draft and redirects to
-     *    the edit URL which contains the newly-assigned product ID
-     * 3. Extract CSRF tokens from the redirect URL and form HTML
-     * 4. POST the product form (name, price, quantity, tokens) to make the product live
+     * Two-step flow matching the actual browser behaviour:
+     *
+     * Step 1 — Create product instance (GET):
+     *   First, the product list page is fetched to obtain the route-level {@code _token}.
+     *   Then GET /products-v2/new?_token={token} is requested.  Prestashop creates a
+     *   draft product, assigns it a new ID, and redirects to the edit page:
+     *     /products-v2/{newId}/edit?forceDefaultActive=0&_token={token}
+     *   The product ID is extracted from this redirect URL.
+     *
+     * Step 2 — Fill product data (POST):
+     *   The edit page HTML contains a second CSRF token (product[_token]).
+     *   A POST to the same edit URL with the full form body (name, price, stock, …)
+     *   saves the product details and makes it available for purchase.
      *
      * Admin credentials and URL are read from config.properties:
      *   admin.base.url, admin.email, admin.password
@@ -189,33 +170,57 @@ public class PrestashopApiClient {
             ensureAdminLoggedIn();
             String adminBase = ConfigLoader.getProperty("admin.base.url", "http://145.239.29.235/admin_hackathon");
 
-            // Step 1: GET new product page — Prestashop creates a draft and redirects to
-            // /sell/catalog/products-v2/{newId}/edit, giving us the product ID and tokens
-            String newProductUrl = adminBase + "/index.php/sell/catalog/products-v2/new";
-            HttpResponse<String> newPageResponse = adminHttpClient.send(
+            // ----------------------------------------------------------------
+            // Step 1a: GET the product list page to obtain the route _token.
+            // The token appears in action links embedded in the list HTML and
+            // must be passed when requesting the "new product" URL.
+            // ----------------------------------------------------------------
+            String listUrl = adminBase + "/index.php/sell/catalog/products-v2";
+            HttpResponse<String> listResponse = adminHttpClient.send(
+                    HttpRequest.newBuilder().uri(new URI(listUrl)).GET().build(),
+                    HttpResponse.BodyHandlers.ofString());
+
+            String routeToken = extractAdminToken(listResponse.body());
+            if (routeToken.isEmpty()) {
+                routeToken = extractAdminToken(listResponse.uri().toString());
+            }
+            logger.debug("Route _token from list page: {}", routeToken);
+
+            // ----------------------------------------------------------------
+            // Step 1b: GET /products-v2/new?_token={routeToken}
+            // Prestashop creates a draft product (assigns a new ID) and
+            // redirects to /products-v2/{newId}/edit?forceDefaultActive=0&_token=...
+            // ----------------------------------------------------------------
+            String newProductUrl = adminBase + "/index.php/sell/catalog/products-v2/new"
+                    + "?_token=" + URLEncoder.encode(routeToken, StandardCharsets.UTF_8);
+            HttpResponse<String> editPageResponse = adminHttpClient.send(
                     HttpRequest.newBuilder().uri(new URI(newProductUrl)).GET().build(),
                     HttpResponse.BodyHandlers.ofString());
 
-            // Step 2: Extract product ID from the final (post-redirect) URL
-            String finalUrl = newPageResponse.uri().toString();
-            long productId = extractProductIdFromUrl(finalUrl);
+            // Extract the newly-assigned product ID from the redirect destination URL
+            String editPageUrl = editPageResponse.uri().toString();
+            long productId = extractProductIdFromUrl(editPageUrl);
             if (productId < 0) {
-                logger.error("Could not extract product ID from redirect URL: {}", finalUrl);
+                logger.error("Could not extract product ID from redirect URL: {}", editPageUrl);
                 return -1;
             }
-            logger.debug("New product ID: {}", productId);
+            logger.debug("Draft product created with ID: {}", productId);
 
-            // Step 3: Extract CSRF tokens — URL _token and form product[_token]
-            String urlToken = extractAdminToken(finalUrl);
-            String formToken = extractInputValue(newPageResponse.body(), "product[_token]");
-            logger.debug("URL _token: {}, form product[_token]: {}", urlToken, formToken);
+            // ----------------------------------------------------------------
+            // Step 2: POST the product form to the edit endpoint.
+            // Two tokens are needed:
+            //   urlToken  — _token in the URL query string (route-level security)
+            //   formToken — product[_token] embedded in the edit page form HTML
+            // ----------------------------------------------------------------
+            String urlToken  = extractAdminToken(editPageUrl);
+            String formToken = extractInputValue(editPageResponse.body(), "product[_token]");
+            logger.debug("Edit page URL _token: {}, form product[_token]: {}", urlToken, formToken);
 
-            // Step 4: POST product form to the edit endpoint to set name/price/qty and publish
             String editUrl = adminBase + "/index.php/sell/catalog/products-v2/" + productId
                     + "/edit?forceDefaultActive=0&_token=" + URLEncoder.encode(urlToken, StandardCharsets.UTF_8);
             String formBody = buildProductFormBody(name, price, quantity, formToken);
 
-            HttpResponse<String> editResponse = adminHttpClient.send(
+            HttpResponse<String> saveResponse = adminHttpClient.send(
                     HttpRequest.newBuilder()
                             .uri(new URI(editUrl))
                             .header("Content-Type", "application/x-www-form-urlencoded")
@@ -223,7 +228,7 @@ public class PrestashopApiClient {
                             .build(),
                     HttpResponse.BodyHandlers.ofString());
 
-            logger.info("Product created — ID: {}, HTTP {}", productId, editResponse.statusCode());
+            logger.info("Product saved — ID: {}, HTTP {}", productId, saveResponse.statusCode());
             return productId;
         } catch (Exception e) {
             logger.error("Failed to create product via admin panel", e);
@@ -264,8 +269,8 @@ public class PrestashopApiClient {
         logger.info("Finding customer ID for email: {}", email);
         try {
             String encodedEmail = URLEncoder.encode(email, StandardCharsets.UTF_8);
-            String endpoint = "/customers?ws_key=" + apiKey + "&output_format=JSON&filter[email]=" + encodedEmail + "&display=[id]";
-            String response = makeRequest("GET", endpoint, null);
+            String endpoint = "/customers?output_format=JSON&filter[email]=" + encodedEmail + "&display=[id]";
+            String response = makeRequest("GET", endpoint, null, null);
 
             if (response == null || response.isEmpty()) {
                 logger.warn("No response from API when searching for customer with email: {}", email);
@@ -300,8 +305,8 @@ public class PrestashopApiClient {
     public boolean deleteCustomer(long customerId) {
         logger.info("Deleting customer: {}", customerId);
         try {
-            String endpoint = "/customers/" + customerId + "?ws_key=" + apiKey;
-            String response = makeRequest("DELETE", endpoint, null);
+            String endpoint = "/customers/" + customerId;
+            String response = makeRequest("DELETE", endpoint, null, null);
 
             // Successful deletion returns a response (typically empty or status)
             logger.info("Customer {} deleted successfully", customerId);
@@ -590,34 +595,37 @@ public class PrestashopApiClient {
     // =========================================================================
 
     /**
-     * Helper method to make HTTP requests with API authentication (internal use).
+     * Helper method to make HTTP requests with HTTP Basic Auth (API key as username).
      *
-     * Prestashop API uses query parameter authentication (ws_key) rather than header authentication.
-     * The ws_key should be included in the endpoint URL by the caller.
+     * Prestashop Webservice API authenticates via HTTP Basic Auth:
+     *   Username = API key, Password = (empty)
+     * This matches the URL format: http://API_KEY@host/api/endpoint
      *
-     * @param method HTTP method (GET, POST, DELETE, etc.)
-     * @param endpoint API endpoint path (e.g., "/customers?ws_key=...")
-     * @param body request body for POST/PUT requests
-     * @return HTTP response as string
+     * @param method      HTTP method (GET, POST, PUT, DELETE)
+     * @param endpoint    API endpoint path (e.g., "/customers?output_format=JSON")
+     * @param body        request body for POST/PUT requests (null for GET/DELETE)
+     * @param contentType content type for POST/PUT (e.g., "text/xml"), null defaults to "application/json"
+     * @return HTTP response body as string, or null on error
      */
-    private String makeRequest(String method, String endpoint, String body) throws Exception {
+    private String makeRequest(String method, String endpoint, String body, String contentType) throws Exception {
         String url = baseUrl + endpoint;
         logger.debug("Making {} request to: {}", method, url);
 
+        String authHeader = "Basic " + Base64.getEncoder()
+                .encodeToString((apiKey + ":").getBytes(StandardCharsets.UTF_8));
+        String resolvedContentType = (contentType != null) ? contentType : "application/json";
+
         HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
                 .uri(new URI(url))
-                .header("Content-Type", "application/json");
+                .header("Authorization", authHeader)
+                .header("Content-Type", resolvedContentType);
 
-        // Note: Prestashop API uses ws_key query parameter (included in endpoint)
-        // rather than Authorization header. No header auth needed.
-
-        // Set method and body based on HTTP verb
         switch (method.toUpperCase()) {
             case "POST":
-                requestBuilder.POST(HttpRequest.BodyPublishers.ofString(body));
+                requestBuilder.POST(HttpRequest.BodyPublishers.ofString(body != null ? body : ""));
                 break;
             case "PUT":
-                requestBuilder.PUT(HttpRequest.BodyPublishers.ofString(body));
+                requestBuilder.PUT(HttpRequest.BodyPublishers.ofString(body != null ? body : ""));
                 break;
             case "DELETE":
                 requestBuilder.DELETE();
