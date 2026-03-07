@@ -516,25 +516,73 @@ public class PrestashopApiClient {
      * @return URL-encoded form body string
      */
     private String buildProductFormBody(String name, double price, int quantity, String formToken) {
-        return "product[name][1]="         + URLEncoder.encode(name, StandardCharsets.UTF_8)
-                + "&product[type]=standard"
-                + "&product[active]=1"
-                + "&product[price]="        + String.format("%.6f", price)
-                + "&product[unity]="
-                + "&product[unit_price_ratio]=0.000000"
-                + "&product[minimal_quantity]=1"
-                + "&product[low_stock_threshold]=0"
-                + "&product[low_stock_alert]=0"
-                + "&product[visibility]=both"
-                + "&product[condition]=new"
-                + "&product[show_price]=1"
-                + "&product[on_sale]=0"
-                + "&product[online_only]=0"
-                + "&product[quantity]="     + quantity
-                + "&product[out_of_stock]=0"
-                + "&product[pack_stock_type]=3"
-                + "&product[_token]="       + URLEncoder.encode(formToken, StandardCharsets.UTF_8)
-                + "&save=1";
+        // Field names use %5B / %5D (URL-encoded [ / ]) matching the exact browser POST
+        // observed via DevTools. Dynamic values (name, price, quantity, token) are
+        // URL-encoded; all other values are static constants copied from the live fetch.
+        String encName  = URLEncoder.encode(name,      StandardCharsets.UTF_8);
+        String encToken = URLEncoder.encode(formToken, StandardCharsets.UTF_8);
+        String encPrice = String.format("%.6f", price);   // e.g. "19.990000"
+
+        return // --- header section ---
+               "product%5Bheader%5D%5Bname%5D%5B1%5D="             + encName
+             + "&product%5Bheader%5D%5Btype%5D=standard"
+             + "&product%5Bheader%5D%5Bactive%5D=1"
+             + "&product%5Bheader%5D%5Binitial_type%5D=standard"
+             // --- footer (triggers save) ---
+             + "&product%5Bfooter%5D%5Bsave%5D="
+             // --- description section ---
+             + "&product%5Bdescription%5D%5Bdescription_short%5D%5B1%5D="
+             + "&product%5Bdescription%5D%5Bdescription%5D%5B1%5D="
+             + "&product%5Bdescription%5D%5Bcategories%5D%5Bproduct_categories%5D%5B0%5D%5Bdisplay_name%5D=Home"
+             + "&product%5Bdescription%5D%5Bcategories%5D%5Bproduct_categories%5D%5B0%5D%5Bname%5D=Home"
+             + "&product%5Bdescription%5D%5Bcategories%5D%5Bproduct_categories%5D%5B0%5D%5Bid%5D=2"
+             + "&product%5Bdescription%5D%5Bcategories%5D%5Bdefault_category_id%5D=2"
+             + "&product%5Bdescription%5D%5Bmanufacturer%5D=0"
+             // --- details / references ---
+             + "&product%5Bdetails%5D%5Breferences%5D%5Breference%5D="
+             + "&product%5Bdetails%5D%5Breferences%5D%5Bmpn%5D="
+             + "&product%5Bdetails%5D%5Breferences%5D%5Bupc%5D="
+             + "&product%5Bdetails%5D%5Breferences%5D%5Bean_13%5D="
+             + "&product%5Bdetails%5D%5Breferences%5D%5Bisbn%5D="
+             + "&product%5Bdetails%5D%5Bshow_condition%5D=0"
+             // --- stock section ---
+             + "&product%5Bstock%5D%5Bquantities%5D%5Bdelta_quantity%5D%5Binitial_quantity%5D=0"
+             + "&product%5Bstock%5D%5Bquantities%5D%5Bdelta_quantity%5D%5Bquantity%5D=" + quantity
+             + "&product%5Bstock%5D%5Bquantities%5D%5Bdelta_quantity%5D%5Bdelta%5D="   + quantity
+             + "&product%5Bstock%5D%5Bquantities%5D%5Bminimal_quantity%5D=1"
+             + "&product%5Bstock%5D%5Boptions%5D%5Bstock_location%5D="
+             + "&product%5Bstock%5D%5Boptions%5D%5Bdisabling_switch_low_stock_threshold%5D=0"
+             + "&product%5Bstock%5D%5Bavailability%5D%5Bout_of_stock_type%5D=2"
+             + "&product%5Bstock%5D%5Bavailability%5D%5Bavailable_now_label%5D%5B1%5D="
+             + "&product%5Bstock%5D%5Bavailability%5D%5Bavailable_later_label%5D%5B1%5D="
+             + "&product%5Bstock%5D%5Bavailability%5D%5Bavailable_date%5D="
+             // --- shipping section ---
+             + "&product%5Bshipping%5D%5Bdimensions%5D%5Bwidth%5D=0"
+             + "&product%5Bshipping%5D%5Bdimensions%5D%5Bheight%5D=0"
+             + "&product%5Bshipping%5D%5Bdimensions%5D%5Bdepth%5D=0"
+             + "&product%5Bshipping%5D%5Bdimensions%5D%5Bweight%5D=0"
+             + "&product%5Bshipping%5D%5Bdelivery_time_note_type%5D=1"
+             + "&product%5Bshipping%5D%5Badditional_shipping_cost%5D=0.000000"
+             // --- pricing section ---
+             + "&product%5Bpricing%5D%5Bretail_price%5D%5Bprice_tax_excluded%5D=" + encPrice
+             + "&product%5Bpricing%5D%5Bretail_price%5D%5Btax_rules_group_id%5D=1"
+             + "&product%5Bpricing%5D%5Bretail_price%5D%5Bprice_tax_included%5D=" + encPrice
+             + "&product%5Bpricing%5D%5Bwholesale_price%5D=0.000000"
+             + "&product%5Bpricing%5D%5Bdisabling_switch_unit_price%5D=0"
+             + "&paginator-limit=10"
+             + "&product%5Bpricing%5D%5Bpriority_management%5D%5Buse_custom_priority%5D=0"
+             // --- SEO section ---
+             + "&product%5Bseo%5D%5Bmeta_title%5D%5B1%5D="
+             + "&product%5Bseo%5D%5Bmeta_description%5D%5B1%5D="
+             + "&product%5Bseo%5D%5Blink_rewrite%5D%5B1%5D="
+             + "&product%5Bseo%5D%5Bredirect_option%5D%5Btype%5D=default"
+             + "&product%5Bseo%5D%5Btags%5D%5B1%5D="
+             // --- options / visibility ---
+             + "&product%5Boptions%5D%5Bvisibility%5D%5Bvisibility%5D=both"
+             + "&product%5Boptions%5D%5Bvisibility%5D%5Bavailable_for_order%5D=1"
+             + "&product%5Boptions%5D%5Bvisibility%5D%5Bonline_only%5D=0"
+             // --- CSRF token ---
+             + "&product%5B_token%5D=" + encToken;
     }
 
     // =========================================================================
