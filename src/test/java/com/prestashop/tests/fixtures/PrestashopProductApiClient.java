@@ -12,6 +12,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -101,9 +102,12 @@ public class PrestashopProductApiClient {
     public boolean deleteProduct(long productId) {
         logger.info("Deleting product: {}", productId);
         try {
-            String url = wsApiBaseUrl + "/products/" + productId + "?ws_key=" + apiKey;
+            String authHeader = "Basic " + Base64.getEncoder()
+                    .encodeToString((apiKey + ":").getBytes(StandardCharsets.UTF_8));
+            String url = wsApiBaseUrl + "/products/" + productId;
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(new URI(url))
+                    .header("Authorization", authHeader)
                     .DELETE()
                     .build();
 
