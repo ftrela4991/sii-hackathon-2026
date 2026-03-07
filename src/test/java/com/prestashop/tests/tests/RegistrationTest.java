@@ -8,12 +8,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.support.ui.WebDriverWait;
-import org.openqa.selenium.support.ui.ExpectedConditions;
 
-import java.time.Duration;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -33,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("TC-001: Register New Customer Successfully")
 public class RegistrationTest extends BaseTest {
 
-    private static final int WAIT_TIMEOUT = 15;
     private String testEmail;
     private PrestashopApiClient apiClient;
 
@@ -95,10 +89,8 @@ public class RegistrationTest extends BaseTest {
         registrationPage.clickSave();
         logger.info("Registration form submitted - waiting for homepage");
 
-        // Wait for the Sign out link to appear in the header (confirms session + page load)
-        // Actual selector: a.logout (class="logout hidden-sm-down", href="?mylogout=")
-        WebDriverWait wait = new WebDriverWait(getDriver(), Duration.ofSeconds(WAIT_TIMEOUT));
-        wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("a.logout")));
+        // Wait for Sign out link to appear in header (confirms successful authentication and page transition)
+        registrationPage.waitForSignOutLink();
         logger.info("Sign out link appeared - page transition complete");
 
         // ============================================================
@@ -113,18 +105,14 @@ public class RegistrationTest extends BaseTest {
         logger.info("✓ R-1 Assertion passed: URL is homepage");
 
         // R-2: Verify full name is displayed in header next to Sign out
-        // Actual selector: .user-info a.account span.hidden-sm-down
-        WebElement userNameEl = getDriver().findElement(By.cssSelector(".user-info a.account span.hidden-sm-down"));
-        String userName = userNameEl.getText().trim();
+        String userName = registrationPage.getUserNameInHeader().trim();
         logger.info("User name in header: {}", userName);
         assertTrue(userName.equalsIgnoreCase("John Doe"),
                 "Expected header to display 'John Doe' after registration, but found: '" + userName + "'");
         logger.info("✓ R-2 Assertion passed: Header displays 'John Doe'");
 
         // R-3: Verify Sign out link is visible (authenticated state)
-        // Actual selector: a.logout (class="logout hidden-sm-down")
-        WebElement signOutLink = getDriver().findElement(By.cssSelector("a.logout"));
-        assertTrue(signOutLink.isDisplayed(),
+        assertTrue(registrationPage.isSignOutLinkVisible(),
                 "Expected header to show 'Sign out' (authenticated state) after registration, but Sign out was not visible");
         logger.info("✓ R-3 Assertion passed: Sign out link is visible");
 

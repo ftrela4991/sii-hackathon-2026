@@ -31,6 +31,10 @@ public class RegistrationPage extends BasePage {
     // Use the email input as the main element to verify page is loaded
     private static final By PAGE_LOADED_ELEMENT = By.id("field-email");
 
+    // Header locators (for post-registration verification)
+    private static final By SIGN_OUT_LINK = By.cssSelector("a.logout");
+    private static final By USER_NAME_DISPLAY = By.cssSelector(".user-info a.account span.hidden-sm-down");
+
     public RegistrationPage(WebDriver driver) {
         super(driver);
     }
@@ -109,6 +113,35 @@ public class RegistrationPage extends BasePage {
     public void clickSave() {
         logger.info("Clicking Save button to submit registration");
         click(SAVE_BUTTON);
+    }
+
+    /**
+     * Get the user name displayed in the header (after successful registration).
+     *
+     * @return the user name text from the header
+     */
+    public String getUserNameInHeader() {
+        logger.info("Getting user name from header");
+        return getText(USER_NAME_DISPLAY);
+    }
+
+    /**
+     * Check if the Sign out link is visible in the header.
+     *
+     * @return true if Sign out link is visible, false otherwise
+     */
+    public boolean isSignOutLinkVisible() {
+        logger.info("Checking if Sign out link is visible");
+        return isElementVisible(SIGN_OUT_LINK);
+    }
+
+    /**
+     * Wait for Sign out link to appear (confirms authentication state).
+     * Useful for waiting after form submission before assertions.
+     */
+    public void waitForSignOutLink() {
+        logger.info("Waiting for Sign out link to appear");
+        waitForElement(SIGN_OUT_LINK);
     }
 
     /**
