@@ -3,6 +3,7 @@ package com.prestashop.tests.base;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.TimeoutException;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.slf4j.Logger;
@@ -19,6 +20,10 @@ import java.time.Duration;
  * IMPORTANT: Page objects contain ONLY UI operations and element locators.
  * Business assertions belong in test classes, not here.
  * Exception: assertLoaded() is allowed to verify page state (e.g., header visible).
+ *
+ * THREAD SAFETY: This class is NOT thread-safe if the same BasePage instance
+ * is shared across threads. Each thread must instantiate its own page object
+ * with its own ThreadLocal WebDriver instance.
  */
 public class BasePage {
     protected static final Logger logger = LoggerFactory.getLogger(BasePage.class);
@@ -27,8 +32,13 @@ public class BasePage {
 
     /**
      * Constructor accepts a WebDriver instance from the test.
+     * @param driver the WebDriver instance (must not be null)
+     * @throws IllegalArgumentException if driver is null
      */
     public BasePage(WebDriver driver) {
+        if (driver == null) {
+            throw new IllegalArgumentException("WebDriver cannot be null");
+        }
         this.driver = driver;
         // Initialize explicit wait with timeout from config
         int waitTimeout = ConfigLoader.getIntProperty("timeout.explicit.wait", 15);
@@ -52,9 +62,17 @@ public class BasePage {
     }
 
     /**
-     * Send text to an element (clears field first, then types).
+     * Send text to an element (clears field first to ensure clean input).
+     * Clears any existing content before typing to prevent input pollution
+     * from previous test data.
+     * @param locator the element to send keys to
+     * @param text the text to send (must not be null)
      */
     public void sendKeys(By locator, String text) {
+        if (text == null) {
+            logger.warn("Text parameter is null for locator: {}", locator);
+            return;
+        }
         logger.debug("Sending keys to element: {} with text: {}", locator, text);
         WebElement element = waitForElement(locator);
         element.clear();
@@ -71,11 +89,13 @@ public class BasePage {
 
     /**
      * Check if an element is present and visible.
+     * @param locator the element locator
+     * @return true if the element is visible, false otherwise
      */
     public boolean isElementVisible(By locator) {
         try {
             return wait.until(ExpectedConditions.visibilityOfElementLocated(locator)) != null;
-        } catch (Exception e) {
+        } catch (TimeoutException e) {
             logger.debug("Element not visible: {}", locator);
             return false;
         }
@@ -91,14 +111,20 @@ public class BasePage {
 
     /**
      * Navigate to a URL.
+     * @param url the URL to navigate to (must not be null or empty)
      */
     public void navigateTo(String url) {
-        logger.info("Navigating to URL: {}", url);
+        if (url == null || url.trim().isEmpty()) {
+            logger.warn("URL cannot be null or empty");
+            return;
+        }
+        logger.debug("Navigating to URL: {}", url);
         driver.navigate().to(url);
     }
 
     /**
      * Get the current page URL.
+     * @return the current page URL
      */
     public String getCurrentUrl() {
         return driver.getCurrentUrl();
@@ -106,6 +132,7 @@ public class BasePage {
 
     /**
      * Get the current page title.
+     * @return the current page title (from &lt;title&gt; tag)
      */
     public String getPageTitle() {
         return driver.getTitle();
