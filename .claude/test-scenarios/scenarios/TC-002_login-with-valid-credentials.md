@@ -27,14 +27,15 @@ A customer account exists with email "existing_user@test.com" and password "Test
 **When** the user enters email "existing_user@test.com"
 **And** the user enters password "Test@1234!"
 **And** the user clicks "Sign in"
-**Then** the user is redirected to `/my-account`
-**And** the header shows the customer's name and "Sign out"
+**Then** the user remains on the homepage `http://145.239.29.235/`
+**And** the header shows "Sign out" instead of "Sign in"
+**And** the header displays the customer's full name next to the sign out link
 
 ---
 
 ## Acceptance Criteria
 
-- [ ] Successful login redirects to My Account
-- [ ] Customer name is visible in the header after login
-- [ ] Session cookie is set correctly
+- [ ] User remains on the homepage after successful login
+- [ ] Header shows "Sign out" instead of "Sign in"
+- [ ] Header displays the customer's full name next to "Sign out"
 - [ ] Test account created and removed via API

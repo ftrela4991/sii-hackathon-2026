@@ -204,7 +204,7 @@ public abstract class BaseTest {
         if (driver == null) {
             throw new IllegalStateException("WebDriver is not initialized. Ensure setUp() has completed.");
         }
-        String baseUrl = ConfigLoader.getProperty("base.url", "https://demo.prestashop.com");
+        String baseUrl = ConfigLoader.getProperty("base.url");
         String fullUrl = baseUrl + (path.startsWith("/") ? "" : "/") + path;
         driver.navigate().to(fullUrl);
         logger.info("Navigated to: {}", fullUrl);
