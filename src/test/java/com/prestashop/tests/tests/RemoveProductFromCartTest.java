@@ -3,7 +3,7 @@ package com.prestashop.tests.tests;
 import com.prestashop.tests.base.BaseTest;
 import com.prestashop.tests.pages.CartPage;
 import com.prestashop.tests.pages.ProductDetailPage;
-import com.prestashop.tests.fixtures.PrestashopProductApiClient;
+import com.prestashop.tests.fixtures.PrestashopApiClient;
 import com.prestashop.tests.assertions.CartAssertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
@@ -16,12 +16,12 @@ public class RemoveProductFromCartTest extends BaseTest {
     private static final String PRODUCT_NAME = "Test Product TC-004";
     private static final double PRODUCT_PRICE = 19.99;
 
-    private PrestashopProductApiClient apiClient;
+    private PrestashopApiClient apiClient;
     private long testProductId = -1;
 
     @BeforeEach
     public void setupTestProduct() {
-        apiClient = new PrestashopProductApiClient();
+        apiClient = new PrestashopApiClient();
         testProductId = apiClient.createProduct(PRODUCT_NAME, PRODUCT_PRICE);
     }
 
@@ -40,14 +40,14 @@ public class RemoveProductFromCartTest extends BaseTest {
             return;
         }
 
-        navigateTo("/product/" + testProductId);
+        navigateTo("/?id_product=" + testProductId + "&controller=product");
         ProductDetailPage productPage = new ProductDetailPage(getDriver());
         productPage.assertLoaded();
 
         productPage.clickAddToCart();
         productPage.waitForCartBadge();
 
-        navigateTo("/cart");
+        navigateTo("/cart?action=show");
         CartPage cartPage = new CartPage(getDriver());
         cartPage.assertLoaded();
 
