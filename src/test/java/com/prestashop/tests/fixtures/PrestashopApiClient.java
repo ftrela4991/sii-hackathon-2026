@@ -1,0 +1,221 @@
+package com.prestashop.tests.fixtures;
+
+import com.prestashop.tests.utils.ConfigLoader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * API client for Prestashop test data setup.
+ *
+ * Provides methods to create and manage test data via Prestashop REST API
+ * instead of UI interactions. This follows the test architecture requirement:
+ * "API-based setup where possible (not UI)".
+ *
+ * Usage in tests:
+ * <pre>
+ * &#64;BeforeEach
+ * void setupTestData() {
+ *     PrestashopApiClient api = new PrestashopApiClient();
+ *     long customerId = api.createCustomer("test@example.com", "password123");
+ *     long productId = api.createProduct("Test Product", 99.99);
+ * }
+ * </pre>
+ */
+public class PrestashopApiClient {
+    private static final Logger logger = LoggerFactory.getLogger(PrestashopApiClient.class);
+
+    private final String baseUrl;
+    private final String apiKey;
+    private final HttpClient httpClient;
+
+    /**
+     * Initialize API client with base URL and API key from config.
+     *
+     * API key should be configured in src/test/resources/config.properties:
+     * api.key=your_api_key_here
+     *
+     * @throws IllegalStateException if API key is not configured
+     */
+    public PrestashopApiClient() {
+        this.baseUrl = ConfigLoader.getProperty("api.base.url", "http://145.239.29.235/api");
+        this.apiKey = ConfigLoader.getProperty("api.key", "");
+        this.httpClient = HttpClient.newHttpClient();
+
+        if (apiKey == null || apiKey.trim().isEmpty()) {
+            logger.warn("API key not configured in config.properties. Set 'api.key' property to enable API operations.");
+        }
+
+        logger.info("Prestashop API client initialized with base URL: {}", baseUrl);
+    }
+
+    /**
+     * Create a new customer via API.
+     *
+     * @param email customer email address
+     * @param password customer password
+     * @return customer ID if successful, -1 if failed
+     */
+    public long createCustomer(String email, String password) {
+        logger.info("Creating customer with email: {}", email);
+        try {
+            // TODO: Implement POST /customers endpoint
+            // Example: POST /api/customers with JSON body containing email, password, etc.
+            // Parse response and return customer ID
+            // Handle errors and log appropriately
+
+            logger.warn("createCustomer not yet implemented");
+            return -1;
+        } catch (Exception e) {
+            logger.error("Failed to create customer", e);
+            return -1;
+        }
+    }
+
+    /**
+     * Create a new product via API.
+     *
+     * @param name product name
+     * @param price product price
+     * @return product ID if successful, -1 if failed
+     */
+    public long createProduct(String name, double price) {
+        logger.info("Creating product: {} with price: {}", name, price);
+        try {
+            // TODO: Implement POST /products endpoint
+            // Example: POST /api/products with JSON body containing name, price, etc.
+            // Parse response and return product ID
+            // Handle errors and log appropriately
+
+            logger.warn("createProduct not yet implemented");
+            return -1;
+        } catch (Exception e) {
+            logger.error("Failed to create product", e);
+            return -1;
+        }
+    }
+
+    /**
+     * Add product to customer's cart via API.
+     *
+     * @param customerId customer ID
+     * @param productId product ID
+     * @param quantity quantity to add
+     * @return true if successful, false otherwise
+     */
+    public boolean addToCart(long customerId, long productId, int quantity) {
+        logger.info("Adding product {} (qty: {}) to cart for customer {}", productId, quantity, customerId);
+        try {
+            // TODO: Implement POST /carts endpoint or similar
+            // Handle cart operations via API
+            // Return success/failure status
+
+            logger.warn("addToCart not yet implemented");
+            return false;
+        } catch (Exception e) {
+            logger.error("Failed to add to cart", e);
+            return false;
+        }
+    }
+
+    /**
+     * Delete a customer via API (cleanup).
+     *
+     * @param customerId customer ID to delete
+     * @return true if successful, false otherwise
+     */
+    public boolean deleteCustomer(long customerId) {
+        logger.info("Deleting customer: {}", customerId);
+        try {
+            // TODO: Implement DELETE /customers/{id} endpoint
+            // Parse response and return success/failure
+
+            logger.warn("deleteCustomer not yet implemented");
+            return false;
+        } catch (Exception e) {
+            logger.error("Failed to delete customer", e);
+            return false;
+        }
+    }
+
+    /**
+     * Delete a product via API (cleanup).
+     *
+     * @param productId product ID to delete
+     * @return true if successful, false otherwise
+     */
+    public boolean deleteProduct(long productId) {
+        logger.info("Deleting product: {}", productId);
+        try {
+            // TODO: Implement DELETE /products/{id} endpoint
+            // Parse response and return success/failure
+
+            logger.warn("deleteProduct not yet implemented");
+            return false;
+        } catch (Exception e) {
+            logger.error("Failed to delete product", e);
+            return false;
+        }
+    }
+
+    /**
+     * Helper method to make HTTP requests with API authentication (internal use).
+     *
+     * @param method HTTP method (GET, POST, DELETE, etc.)
+     * @param endpoint API endpoint path (e.g., "/customers")
+     * @param body request body for POST/PUT requests
+     * @return HTTP response as string
+     */
+    private String makeRequest(String method, String endpoint, String body) throws Exception {
+        String url = baseUrl + endpoint;
+        logger.debug("Making {} request to: {}", method, url);
+
+        HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+                .uri(new URI(url))
+                .header("Content-Type", "application/json");
+
+        // Add API key authentication header if configured
+        if (apiKey != null && !apiKey.trim().isEmpty()) {
+            requestBuilder.header("Authorization", "Bearer " + apiKey);
+            logger.debug("API request includes authorization header");
+        } else {
+            logger.warn("API key not configured - request will be unauthenticated");
+        }
+
+        // Set method and body based on HTTP verb
+        switch (method.toUpperCase()) {
+            case "POST":
+                requestBuilder.POST(HttpRequest.BodyPublishers.ofString(body));
+                break;
+            case "PUT":
+                requestBuilder.PUT(HttpRequest.BodyPublishers.ofString(body));
+                break;
+            case "DELETE":
+                requestBuilder.DELETE();
+                break;
+            case "GET":
+            default:
+                requestBuilder.GET();
+                break;
+        }
+
+        HttpRequest request = requestBuilder.build();
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() >= 200 && response.statusCode() < 300) {
+            logger.debug("API request successful ({})", response.statusCode());
+            return response.body();
+        } else {
+            logger.error("API request failed ({}): {}", response.statusCode(), response.body());
+            return null;
+        }
+    }
+}
