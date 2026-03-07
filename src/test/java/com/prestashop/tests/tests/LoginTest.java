@@ -10,11 +10,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.openqa.selenium.By;
-import org.openqa.selenium.support.ui.WebDriverWait;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-
-import java.time.Duration;
 
 /**
  * Test class for customer login scenarios (TC-002).
@@ -31,7 +26,6 @@ public class LoginTest extends BaseTest {
     // Test data constants
     private static final String TEST_EMAIL = "existing_user@test.com";
     private static final String TEST_PASSWORD = "Test@1234!";
-    private static final int WAIT_TIMEOUT = 15;
 
     // API client for test data setup/cleanup
     private PrestashopApiClient apiClient;
@@ -119,9 +113,7 @@ public class LoginTest extends BaseTest {
         loginPage.login(TEST_EMAIL, TEST_PASSWORD);
 
         // Wait for Sign out link to appear in header (confirms session + page load)
-        // Actual selector: a.logout (class="logout hidden-sm-down", href="?mylogout=")
-        WebDriverWait wait = new WebDriverWait(getDriver(), Duration.ofSeconds(WAIT_TIMEOUT));
-        wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("a.logout")));
+        loginPage.waitForSignOutLink();
         logger.info("Sign out link appeared - login complete");
 
         // Step 6: Verify user remains on homepage (not redirected to /my-account)
@@ -132,14 +124,13 @@ public class LoginTest extends BaseTest {
         logger.info("✓ R-1 Assertion passed: URL is homepage");
 
         // Step 7a: Verify Sign out link is visible (authenticated state)
-        boolean signOutVisible = getDriver().findElement(By.cssSelector("a.logout")).isDisplayed();
+        boolean signOutVisible = loginPage.isSignOutLinkVisible();
         AuthenticationAssertions.assertUserIsAuthenticated(signOutVisible);
         logger.info("✓ R-2 Assertion passed: Sign out link is visible");
 
         // Step 7b: Verify customer full name is visible in header next to Sign out
         // createCustomer(TEST_EMAIL, TEST_PASSWORD) defaults to firstName="Test", lastName="Customer"
-        String userName = getDriver().findElement(
-            By.cssSelector(".user-info a.account span.hidden-sm-down")).getText().trim();
+        String userName = loginPage.getUserNameInHeader().trim();
         logger.info("User name in header: {}", userName);
         AuthenticationAssertions.assertUserNameInHeader(userName, "Test Customer");
         logger.info("✓ R-3 Assertion passed: Header displays 'Test Customer'");

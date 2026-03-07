@@ -17,12 +17,16 @@ import org.slf4j.LoggerFactory;
 public class LoginPage extends BasePage {
     private static final Logger logger = LoggerFactory.getLogger(LoginPage.class);
 
-    // Locators for page elements (prefer id/data-testid for stability)
+    // Locators for login form elements
     private static final By EMAIL_INPUT = By.id("field-email");
     private static final By PASSWORD_INPUT = By.id("field-password");
     private static final By SIGNIN_BUTTON = By.id("submit-login");
-    // Fallback to h1 if no data-testid available (page verification)
+    // Locator for page verification (login page header)
     private static final By LOGIN_HEADER = By.cssSelector("header-top");
+
+    // Locators for header elements (post-login verification)
+    private static final By SIGN_OUT_LINK = By.cssSelector("a.logout");
+    private static final By USER_NAME_DISPLAY = By.cssSelector(".user-info a.account span.hidden-sm-down");
 
     public LoginPage(WebDriver driver) {
         super(driver);
@@ -67,6 +71,35 @@ public class LoginPage extends BasePage {
         enterEmail(email);
         enterPassword(password);
         clickSignIn();
+    }
+
+    /**
+     * Wait for Sign out link to appear in header (confirms authentication).
+     * Useful for waiting after login form submission before verifying authenticated state.
+     */
+    public void waitForSignOutLink() {
+        logger.info("Waiting for Sign out link to appear in header");
+        waitForElement(SIGN_OUT_LINK);
+    }
+
+    /**
+     * Check if the Sign out link is visible in the header.
+     *
+     * @return true if Sign out link is displayed, false otherwise
+     */
+    public boolean isSignOutLinkVisible() {
+        logger.info("Checking if Sign out link is visible");
+        return isElementVisible(SIGN_OUT_LINK);
+    }
+
+    /**
+     * Get the user name displayed in the header (after successful login).
+     *
+     * @return the user name text from the header
+     */
+    public String getUserNameInHeader() {
+        logger.info("Getting user name from header");
+        return getText(USER_NAME_DISPLAY);
     }
 
     /**
