@@ -4,6 +4,7 @@ import com.prestashop.tests.base.BaseTest;
 import com.prestashop.tests.pages.CartPage;
 import com.prestashop.tests.pages.ProductDetailPage;
 import com.prestashop.tests.fixtures.PrestashopProductApiClient;
+import com.prestashop.tests.assertions.CartAssertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -13,8 +14,6 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 
 import java.time.Duration;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test class for remove product from cart scenario (TC-004).
@@ -97,7 +96,7 @@ public class RemoveProductFromCartTest extends BaseTest {
         // Verify cart is empty
         int finalCount = cartPage.getCartItemCount();
         logger.info("Final cart item count after removal: {}", finalCount);
-        assertEquals(0, finalCount, "Cart should be empty after product removal");
+        CartAssertions.assertCartIsEmpty(finalCount);
 
         logger.info("TC-004: Remove product test completed successfully");
     }

@@ -4,14 +4,13 @@ import com.prestashop.tests.base.BaseTest;
 import com.prestashop.tests.fixtures.PrestashopApiClient;
 import com.prestashop.tests.pages.RegistrationPage;
 import com.prestashop.tests.utils.ConfigLoader;
+import com.prestashop.tests.assertions.AuthenticationAssertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test class for TC-001: Register New Customer Successfully
@@ -100,20 +99,17 @@ public class RegistrationTest extends BaseTest {
         // R-1: Verify user stays on homepage (not redirected to /my-account)
         String currentUrl = getDriver().getCurrentUrl();
         logger.info("Current URL after registration: {}", currentUrl);
-        assertTrue(currentUrl.equals(baseUrl + "/"),
-                "Expected URL to be homepage '" + baseUrl + "' after registration, but actual URL was: " + currentUrl);
+        AuthenticationAssertions.assertUserOnHomepage(currentUrl, baseUrl);
         logger.info("✓ R-1 Assertion passed: URL is homepage");
 
         // R-2: Verify full name is displayed in header next to Sign out
         String userName = registrationPage.getUserNameInHeader().trim();
         logger.info("User name in header: {}", userName);
-        assertTrue(userName.equalsIgnoreCase("John Doe"),
-                "Expected header to display 'John Doe' after registration, but found: '" + userName + "'");
+        AuthenticationAssertions.assertUserNameInHeader(userName, "John Doe");
         logger.info("✓ R-2 Assertion passed: Header displays 'John Doe'");
 
         // R-3: Verify Sign out link is visible (authenticated state)
-        assertTrue(registrationPage.isSignOutLinkVisible(),
-                "Expected header to show 'Sign out' (authenticated state) after registration, but Sign out was not visible");
+        AuthenticationAssertions.assertUserIsAuthenticated(registrationPage.isSignOutLinkVisible());
         logger.info("✓ R-3 Assertion passed: Sign out link is visible");
 
         logger.info("Registration test completed successfully");

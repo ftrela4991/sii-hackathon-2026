@@ -1,11 +1,10 @@
 package com.prestashop.tests;
 
 import com.prestashop.tests.base.BaseTest;
+import com.prestashop.tests.assertions.NavigationAssertions;
+import com.prestashop.tests.assertions.ElementAssertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Sample tests to verify the test infrastructure is working.
@@ -32,8 +31,7 @@ public class SampleTests extends BaseTest {
         logger.info("Running test: shouldNavigateToHomeUrl");
         navigateToHome();
         String currentUrl = getDriver().getCurrentUrl();
-        assertNotNull(currentUrl, "Current URL should not be null");
-        assertTrue(currentUrl.length() > 0, "Should be able to navigate to home page");
+        NavigationAssertions.assertCurrentUrlIsValid(currentUrl);
     }
 
     @Test
@@ -42,8 +40,7 @@ public class SampleTests extends BaseTest {
         logger.info("Running parallel test 1, thread: {}", Thread.currentThread().getId());
         navigateToHome();
         String title = getDriver().getTitle();
-        assertNotNull(title, "Page title should be available");
-        assertTrue(title.length() > 0, "Page title should not be empty");
+        NavigationAssertions.assertPageTitleIsValid(title);
     }
 
     @Test
@@ -52,8 +49,7 @@ public class SampleTests extends BaseTest {
         logger.info("Running parallel test 2, thread: {}", Thread.currentThread().getId());
         navigateToHome();
         String title = getDriver().getTitle();
-        assertNotNull(title, "Page title should be available");
-        assertTrue(title.length() > 0, "Page title should not be empty");
+        NavigationAssertions.assertPageTitleIsValid(title);
     }
 
     @Test
@@ -62,14 +58,14 @@ public class SampleTests extends BaseTest {
         logger.info("Running parallel test 3, thread: {}", Thread.currentThread().getId());
         navigateToHome();
         String title = getDriver().getTitle();
-        assertNotNull(title, "Page title should be available");
-        assertTrue(title.length() > 0, "Page title should not be empty");
+        NavigationAssertions.assertPageTitleIsValid(title);
     }
 
     /**
      * Helper method to verify driver is actually initialized.
      */
     private void assertActuallyInitialized() {
-        assertNotNull(getDriver(), "WebDriver should not be null");
+        boolean driverExists = getDriver() != null;
+        ElementAssertions.assertElementIsVisible(driverExists, "WebDriver");
     }
 }

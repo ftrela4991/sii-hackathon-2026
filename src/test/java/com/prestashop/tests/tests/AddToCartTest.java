@@ -3,13 +3,12 @@ package com.prestashop.tests.tests;
 import com.prestashop.tests.base.BaseTest;
 import com.prestashop.tests.pages.CartModalPage;
 import com.prestashop.tests.pages.ProductPage;
+import com.prestashop.tests.assertions.CartAssertions;
+import com.prestashop.tests.assertions.AuthenticationAssertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test class for TC-003: Add Single Product to Cart
@@ -82,24 +81,19 @@ public class AddToCartTest extends BaseTest {
         // R-1: Cart counter in header increments to (1)
         String cartCount = productPage.getCartHeaderCount();
         logger.info("Cart header count: {}", cartCount);
-        assertEquals("(1)", cartCount,
-                "Expected cart counter to show '(1)' after adding one product, but was: '" + cartCount + "'");
+        CartAssertions.assertCartCount(cartCount, "(1)");
         logger.info("✓ R-1 Assertion passed: cart counter is (1)");
 
         // R-2: Modal shows correct product name
         String modalProductName = cartModal.getProductName();
         logger.info("Modal product name: '{}'", modalProductName);
-        assertTrue(modalProductName.equalsIgnoreCase(expectedProductName),
-                "Expected modal to show product name '" + expectedProductName
-                        + "', but found: '" + modalProductName + "'");
+        AuthenticationAssertions.assertModalProductName(modalProductName, expectedProductName);
         logger.info("✓ R-2 Assertion passed: modal shows '{}'", expectedProductName);
 
         // R-3: Modal subtotal matches product price
         String modalSubtotal = cartModal.getSubtotal();
         logger.info("Modal subtotal: '{}', expected: '{}'", modalSubtotal, expectedPrice);
-        assertEquals(expectedPrice, modalSubtotal,
-                "Expected modal subtotal to be '" + expectedPrice
-                        + "', but was: '" + modalSubtotal + "'");
+        AuthenticationAssertions.assertModalPrice(modalSubtotal, expectedPrice);
         logger.info("✓ R-3 Assertion passed: subtotal matches product price '{}'", expectedPrice);
 
         logger.info("TC-003 completed successfully");

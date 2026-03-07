@@ -4,18 +4,17 @@ import com.prestashop.tests.base.BaseTest;
 import com.prestashop.tests.pages.LoginPage;
 import com.prestashop.tests.fixtures.PrestashopApiClient;
 import com.prestashop.tests.utils.ConfigLoader;
+import com.prestashop.tests.assertions.AuthenticationAssertions;
+import com.prestashop.tests.assertions.NavigationAssertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
-import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 
 import java.time.Duration;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test class for customer login scenarios (TC-002).
@@ -129,32 +128,20 @@ public class LoginTest extends BaseTest {
         String baseUrl = ConfigLoader.getProperty("base.url");
         String currentUrl = getDriver().getCurrentUrl();
         logger.info("Current URL after login: {}", currentUrl);
-        assertTrue(
-            currentUrl.equals(baseUrl + "/") || currentUrl.equals(baseUrl.replaceAll("/$", "")),
-            "User should remain on homepage after login, but was: " + currentUrl
-        );
+        NavigationAssertions.assertCurrentUrlMatches(currentUrl, baseUrl);
         logger.info("✓ R-1 Assertion passed: URL is homepage");
 
         // Step 7a: Verify Sign out link is visible (authenticated state)
-        // Actual selector: a.logout (class="logout hidden-sm-down")
-        WebElement signOutLink = getDriver().findElement(By.cssSelector("a.logout"));
-        assertTrue(
-            signOutLink.isDisplayed(),
-            "Sign out link should be visible in header after successful login"
-        );
+        boolean signOutVisible = getDriver().findElement(By.cssSelector("a.logout")).isDisplayed();
+        AuthenticationAssertions.assertUserIsAuthenticated(signOutVisible);
         logger.info("✓ R-2 Assertion passed: Sign out link is visible");
 
         // Step 7b: Verify customer full name is visible in header next to Sign out
-        // Actual selector: .user-info a.account span.hidden-sm-down
         // createCustomer(TEST_EMAIL, TEST_PASSWORD) defaults to firstName="Test", lastName="Customer"
-        WebElement userNameEl = getDriver().findElement(
-            By.cssSelector(".user-info a.account span.hidden-sm-down"));
-        String userName = userNameEl.getText().trim();
+        String userName = getDriver().findElement(
+            By.cssSelector(".user-info a.account span.hidden-sm-down")).getText().trim();
         logger.info("User name in header: {}", userName);
-        assertTrue(
-            userName.equalsIgnoreCase("Test Customer"),
-            "Header should display 'Test Customer' after login, but found: '" + userName + "'"
-        );
+        AuthenticationAssertions.assertUserNameInHeader(userName, "Test Customer");
         logger.info("✓ R-3 Assertion passed: Header displays 'Test Customer'");
 
         logger.info("TC-002: Login test completed successfully");
