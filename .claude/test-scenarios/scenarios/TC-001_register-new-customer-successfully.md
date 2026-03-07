@@ -27,16 +27,16 @@ As a new visitor, I want to create an account so that I can place orders and man
 **And** the user enters Password "Test@1234!" (meets the "Strong" requirement)
 **And** the user checks "I agree to the terms and conditions and the privacy policy"
 **And** the user clicks "Save"
-**Then** the user is redirected to `/my-account`
-**And** the page displays a greeting containing "John Doe"
+**Then** the user remains on the homepage `http://145.239.29.235/`
 **And** the header shows "Sign out" instead of "Sign in"
+**And** the header displays the full name "John Doe" next to the sign out link
 
 ---
 
 ## Acceptance Criteria
 
-- [ ] User is redirected to My Account after successful registration
-- [ ] Greeting includes the registered name
-- [ ] Session is active (Sign out visible)
+- [ ] User remains on the homepage after successful registration
+- [ ] Header shows "Sign out" instead of "Sign in"
+- [ ] Header displays the registered user's full name next to "Sign out"
 - [ ] Test email is unique per run (UUID/timestamp)
 - [ ] Account is cleaned up via API after the test

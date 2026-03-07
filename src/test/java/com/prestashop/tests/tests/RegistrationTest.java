@@ -2,13 +2,14 @@ package com.prestashop.tests.tests;
 
 import com.prestashop.tests.base.BaseTest;
 import com.prestashop.tests.fixtures.PrestashopApiClient;
-import com.prestashop.tests.pages.MyAccountPage;
 import com.prestashop.tests.pages.RegistrationPage;
 import com.prestashop.tests.utils.ConfigLoader;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 
@@ -16,19 +17,18 @@ import java.time.Duration;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Test class for TC-001: Register New Customer Successfully
  *
  * This test verifies that a new visitor can successfully create a customer account
- * using the registration form and that upon submission the system creates an
- * authenticated session, redirects to /my-account, and displays the user's name.
+ * using the registration form and that upon submission the system keeps the user
+ * on the homepage with an active authenticated session (Sign out + full name visible).
  *
  * Follows the Arrange-Act-Assert pattern:
  * - Arrange: Generate test data and navigate to registration page
  * - Act: Fill in and submit the registration form
- * - Assert: Verify redirect, greeting, and authenticated session
+ * - Assert: Verify homepage URL, Sign out visible, full name in header
  */
 @DisplayName("TC-001: Register New Customer Successfully")
 public class RegistrationTest extends BaseTest {
@@ -55,12 +55,11 @@ public class RegistrationTest extends BaseTest {
      * 1. Navigate to /registration
      * 2. Fill in registration form with valid data
      * 3. Submit the form
-     * 4. Verify redirect to /my-account
-     * 5. Verify greeting displays the registered name
-     * 6. Verify authenticated session (Sign out visible)
+     * 4. Verify user stays on homepage
+     * 5. Verify header shows "Sign out" and full name "John Doe"
      */
     @Test
-    @DisplayName("User can register with valid data and is redirected to My Account")
+    @DisplayName("User can register with valid data and homepage shows authenticated state")
     void shouldRegisterNewCustomerSuccessfully() {
         logger.info("Starting registration test with email: {}", testEmail);
 
@@ -93,39 +92,38 @@ public class RegistrationTest extends BaseTest {
         registrationPage.checkCustomerPrivacy();
         logger.info("✓ Checked customer privacy");
         registrationPage.clickSave();
-        logger.info("Registration form submitted - waiting for redirect");
+        logger.info("Registration form submitted - waiting for homepage");
 
-        // Wait for page navigation to complete
-        logger.info("Waiting for redirect to My Account page");
+        // Wait for the Sign out link to appear in the header (confirms session + page load)
+        // Actual selector: a.logout (class="logout hidden-sm-down", href="?mylogout=")
         WebDriverWait wait = new WebDriverWait(getDriver(), Duration.ofSeconds(15));
-        wait.until(ExpectedConditions.urlContains("/my-account"));
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("a.logout")));
+        logger.info("Sign out link appeared - page transition complete");
 
         // ============================================================
         // ASSERT: Verify successful registration and session
         // ============================================================
-        MyAccountPage myAccountPage = new MyAccountPage(getDriver());
-        myAccountPage.assertLoaded();
-        logger.info("My Account page loaded and verified");
 
-        // R-1: Verify redirect to My Account page
+        // R-1: Verify user stays on homepage (not redirected to /my-account)
         String currentUrl = getDriver().getCurrentUrl();
         logger.info("Current URL after registration: {}", currentUrl);
-        assertTrue(currentUrl.contains("/my-account"),
-                "Expected URL to contain '/my-account' after registration, but actual URL was: " + currentUrl);
-        logger.info("✓ R-1 Assertion passed: URL contains /my-account");
+        assertTrue(currentUrl.equals(baseUrl) || currentUrl.equals(baseUrl.replaceAll("/$", "")),
+                "Expected URL to be homepage '" + baseUrl + "' after registration, but actual URL was: " + currentUrl);
+        logger.info("✓ R-1 Assertion passed: URL is homepage");
 
-        // R-2: Verify personalised greeting is displayed
-        String greetingText = myAccountPage.getGreetingText();
-        logger.info("Greeting text from page: {}", greetingText);
-        assertNotNull(greetingText, "Greeting text should not be null");
-        assertTrue(greetingText.toLowerCase().contains("john doe"),
-                "Expected page to contain greeting 'John Doe' after registration, but greeting text was: " + greetingText);
-        logger.info("✓ R-2 Assertion passed: Greeting contains 'John Doe'");
+        // R-2: Verify full name is displayed in header next to Sign out
+        // Actual selector: .user-info a.account span.hidden-sm-down
+        WebElement userNameEl = getDriver().findElement(By.cssSelector(".user-info a.account span.hidden-sm-down"));
+        String userName = userNameEl.getText().trim();
+        logger.info("User name in header: {}", userName);
+        assertTrue(userName.equalsIgnoreCase("John Doe"),
+                "Expected header to display 'John Doe' after registration, but found: '" + userName + "'");
+        logger.info("✓ R-2 Assertion passed: Header displays 'John Doe'");
 
-        // R-3: Verify authenticated session is active
-        boolean isSignOutVisible = myAccountPage.isSignOutVisible();
-        logger.info("Sign out link visible: {}", isSignOutVisible);
-        assertTrue(isSignOutVisible,
+        // R-3: Verify Sign out link is visible (authenticated state)
+        // Actual selector: a.logout (class="logout hidden-sm-down")
+        WebElement signOutLink = getDriver().findElement(By.cssSelector("a.logout"));
+        assertTrue(signOutLink.isDisplayed(),
                 "Expected header to show 'Sign out' (authenticated state) after registration, but Sign out was not visible");
         logger.info("✓ R-3 Assertion passed: Sign out link is visible");
 
