@@ -22,10 +22,10 @@ At least one product with quantity > 0 is available in the store.
 
 ## Scenario
 
-**Given** the user is on the product detail page for "Hummingbird Printed T-Shirt"
+**Given** the user is on the product detail page for any product visible on page. Save product name
 **When** the user clicks the "Add to cart" button
 **Then** the cart icon counter increments to 1
-**And** the cart mini-preview shows the product name "Hummingbird Printed T-Shirt"
+**And** the cart mini-preview shows the product with product name
 **And** the cart total reflects the correct product price
 
 ---
