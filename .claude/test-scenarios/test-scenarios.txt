@@ -1,0 +1,273 @@
+## PODSTAWOWE
+
+* Poprawne założenie konta - stworzenie nowego konta
+
+* Poprawne logowanie - logowanie poprawnymi danymi
+
+* Dodanie jednego produktu do koszyka
+
+* Usunięcie produktu z koszyka
+
+* Złożenie zamówienia - złożenie zamówienia z dowolną metodą płatności (gotówką przy odbiorze)
+
+* Utworzenie standardowego produktu (pojedynczy, bez wariantów) - dodanie produktu do sklepu
+
+* Utworzenie produktu z atrybutami/kombinacjami (np. rozmiar, kolor) - dodanie produktu który ma kombinacje lub rozmiar
+
+* Produkt z różnymi cenami dla kombinacji - zmiana/ustawienie/aktualizacja cen produktu z kombinacjami dla kombinacji
+
+* Produkty przypisane do różnych kategorii
+
+* Promocja procentowa na całą kategorię (np. 20% na Electronics) - utworzenie promocji na kategorię i sprawdzenie wartości koszyka
+
+* Promocja od minimalnej ilości (np. rabat od 2 szt.) - utworzenie rabatu ilościowego i sprawdzenie wartości koszyka
+
+* Kupon kwotowy (np. SAVE15 = 15 €) - stworzenie kuponu i sprawdzenie wartości koszyka
+
+* Kupon jednorazowy (limit użyć = 1) - stworzenie kuponu, sprawdzenie wygaśnięcia po użyciu
+
+* Produkty bez stanu z możliwością zamówienia - stworzenie produktu i sprawdzenie możliwości dodania do koszyka
+
+* Produkty bez stanu bez możliwości zamówienia - stworzenie produktu i sprawdzenie możliwości dodania do koszyka
+
+* Różne stawki VAT (23%, 8%, 0%) - stworzenie produktów z różną stawką VAT i weryfikacja wartości koszyka
+
+
+
+
+
+=======================================================================
+
+## zamówienie
+
+* Dodanie jednego produktu do koszyka w innej walucie
+
+* Dodanie jednego produktu w promocji do koszyka
+
+* Dodanie wielu różnych produktów (również z promocjami i różnymi walutami)
+
+* Dodanie wielu różnych produktów z różnych grup
+
+* Zwiększenie ilości produktu w koszyku
+
+* Zmniejszenie ilości produktu do zera
+
+* Sprawdzenie poprawności sumy koszyka
+
+* Sprawdzenie koszyka po odświeżeniu strony
+
+* Sprawdzenie koszyka po powrocie na stronę główną
+
+* Próba przejścia do checkoutu z pustym koszykiem
+
+* Wypełnienie formularza poprawnymi danymi
+
+* Wypełnienie formularza błędnymi danymi
+
+* Sprawdzenie walidacji pól (puste pola, niepoprawny e-mail, spacja na końcu)
+
+* Weryfikacja komunikatu potwierdzającego zamówienie
+
+* Próba uzupełnienia formularza samymi spacjami
+
+* Próba uzupełnienia formularza bardzo długimi stringami (walidacja pól)
+
+* Próba manipulacji ilością produktu (np. wartości ujemne)
+
+* Wrócenie do koszyka po złożeniu zamówienia
+
+* Bezpośrednie wejście na stronę checkoutu bez koszyka
+
+## konto i ustawienia
+
+* Założenie konta bez wymaganych pól
+
+* Założenie konta z niepoprawnym e-mailem
+
+* Założenie konta na już zarejestrowany e-mail
+
+* Założenie konta ze zbyt krótkim hasłem
+
+* Niepoprawne logowanie
+
+* Logowanie na nieistniejące konto
+
+* Wylogowanie
+
+* „Moje konto” bez zalogowania
+
+* „Moje konto” po zalogowaniu
+
+* Dodanie adresu
+
+* Edycja adresu
+
+* Edycja z pominięciem wymaganych pól
+
+* Usunięcie adresu
+
+* GDPR: pobranie danych (Excel)
+
+* GDPR: pobranie danych (PDF)
+
+* Reset hasła
+
+* Reset hasła na innego maila
+
+* Reset hasła na nieistniejącego maila
+
+* Historia zamówień bez zamówień
+
+* Historia zamówień z zamówieniami
+
+* Założenie konta z bardzo długimi danymi (np. `firstname` 255 znaków)
+
+* Założenie konta z samymi spacjami w polach
+
+* Założenie konta ze znakami specjalnymi
+
+* Konta testowe w różnych grupach
+
+* Konta z wieloma adresami dostawy
+
+## produkty i api
+
+* Produkt z ceną 0 (darmowy)
+
+* Produkt z bardzo wysoką ceną (999999 €)
+
+* Produkt z ceną dziesiętną (19.99 €, 0.01 €)
+
+* Produkt niedostępny (`quantity = 0`, zamówienia zablokowane)
+
+* Produkt niedostępny z możliwością zamówienia
+
+* Produkt z ostatnią sztuką (`quantity = 1`)
+
+* Aktywacja wielu walut (EUR, USD, GBP, PLN)
+
+* Ustawienie kursów wymiany
+
+* Ceny specyficzne dla konkretnej waluty
+
+* Domyślna waluta sklepu
+
+* Promocja kwotowa na markę (np. 10 € zniżki na produkty marki X)
+
+* Promocja dla grupy klientów (np. 15% dla zalogowanych)
+
+* Promocja dla konkretnej waluty (np. 25% tylko w USD)
+
+* Promocja czasowa (ważna tylko dziś / ten tydzień)
+
+* Promocja kombinowana (kategoria + waluta + grupa + ilość)
+
+* Kupon procentowy z kodem (np. SUMMER10 = 10%)
+
+* Darmowa dostawa (FREESHIP)
+
+* Kupon bez kodu (automatyczny)
+
+* Kupon z minimalną wartością zamówienia (np. 20% przy ≥ 100 €)
+
+* Kupon dla konkretnego produktu
+
+* Kupon dla konkretnej kategorii
+
+* Kupon dla grupy klientów (np. VIP25 tylko dla VIP)
+
+* Kupon dla konkretnej waluty
+
+* Kupon dla konkretnego kraju
+
+* Kupon z limitem użyć na klienta
+
+* Kupon z limitem globalnym (np. pierwsze 100 osób)
+
+* Kupon czasowy (ważny tylko w określonych datach)
+
+* Kupon z partial use (enabled/disabled)
+
+* Darmowy produkt w prezencie (przy zamówieniu ≥ 80 €)
+
+* Kupon z wartością większą niż koszyk
+
+* Kombinacja wielu kuponów (zgodne)
+
+* Kupony wzajemnie wykluczające się
+
+* Priorytety kuponów (różne kolejności stosowania)
+
+* Utworzenie grup (VIP, Regular, Wholesale)
+
+* Rabaty grupowe (VIP: 10%, Wholesale: 15%)
+
+* Przypisanie klientów do grup
+
+* Ceny specyficzne dla grup
+
+* Produkty z dużym stanem (`quantity = 1000`)
+
+* Produkty z małym stanem (`quantity = 1–5`)
+
+* Kombinacje z różnymi stanami
+
+* Aktywacja metod płatności (minimum 2)
+
+* Konfiguracja każdej metody
+
+* Metody dostępne dla konkretnych walut
+
+* Metody dostępne dla konkretnych krajów
+
+* Aktywacja przewoźników (Standard, Express)
+
+* Różne ceny dostawy (5 €, 10 €, 15 €)
+
+* Darmowa dostawa powyżej progu
+
+* Przewoźnicy dla konkretnych krajów/stref
+
+* Przewoźnicy z wagowymi/cenowymi limitami
+
+* Konfiguracja wymaganych pól (e-mail, imię, nazwisko, adres)
+
+* Włączenie/wyłączenie guest checkout
+
+* Walidacja formatu e-mail
+
+* Walidacja numeru telefonu
+
+* Wymaganie akceptacji regulaminu
+
+* Przypisanie stawek do produktów
+
+* Podatki dla różnych krajów
+
+* Ceny brutto/netto
+
+* Zwolnienia podatkowe dla grup
+
+* Aktywacja krajów (Polska, Niemcy, UK, USA)
+
+* Przypisanie krajów do stref
+
+* Ograniczenia wysyłki do krajów
+
+* Różne ceny dla krajów
+
+* Aktywacja wielu języków
+
+* Tłumaczenia produktów
+
+* Tłumaczenia CMS
+
+* Konfiguracja statusów zamówień
+
+* Minimalna wartość zamówienia (próg np. 10 €)
+
+* Maksymalna wartość zamówienia
+
+* Automatyczne statusy
+
+* Email templates dla statusów
