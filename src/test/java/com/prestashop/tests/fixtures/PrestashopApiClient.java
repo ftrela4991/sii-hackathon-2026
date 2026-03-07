@@ -123,25 +123,97 @@ public class PrestashopApiClient {
     }
 
     /**
-     * Create a new product via API.
+     * Create a new product via Prestashop Webservice API.
      *
-     * @param name product name
-     * @param price product price
+     * POSTs XML to /api/products with HTTP Basic Auth.
+     * Product is created in category 2 (Home) and set to active.
+     *
+     * @param name  product name
+     * @param price product price (tax excluded)
      * @return product ID if successful, -1 if failed
      */
     public long createProduct(String name, double price) {
         logger.info("Creating product: {} with price: {}", name, price);
         try {
-            // TODO: Implement POST /products endpoint
-            // Example: POST /api/products with JSON body containing name, price, etc.
-            // Parse response and return product ID
-            // Handle errors and log appropriately
+            String xmlBody = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                    + "<prestashop xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n"
+                    + "  <product>\n"
+                    + "    <id_category_default><![CDATA[2]]></id_category_default>\n"
+                    + "    <id_tax_rules_group><![CDATA[1]]></id_tax_rules_group>\n"
+                    + "    <price><![CDATA[" + price + "]]></price>\n"
+                    + "    <active><![CDATA[1]]></active>\n"
+                    + "    <available_for_order><![CDATA[1]]></available_for_order>\n"
+                    + "    <show_price><![CDATA[1]]></show_price>\n"
+                    + "    <visibility><![CDATA[both]]></visibility>\n"
+                    + "    <minimal_quantity><![CDATA[1]]></minimal_quantity>\n"
+                    + "    <name><language id=\"1\"><![CDATA[" + name + "]]></language></name>\n"
+                    + "    <associations>\n"
+                    + "      <categories><category><id>2</id></category></categories>\n"
+                    + "    </associations>\n"
+                    + "  </product>\n"
+                    + "</prestashop>";
 
-            logger.warn("createProduct not yet implemented");
-            return -1;
+            String response = makeRequest("POST", "/products?output_format=JSON", xmlBody, "text/xml");
+
+            if (response == null) {
+                logger.error("Product creation failed for: {}", name);
+                return -1;
+            }
+
+            Pattern idPattern = Pattern.compile("\"id\"\\s*:\\s*\"?(\\d+)\"?");
+            Matcher matcher = idPattern.matcher(response);
+
+            if (matcher.find()) {
+                long productId = Long.parseLong(matcher.group(1));
+                logger.info("Product created with ID {} for name: {}", productId, name);
+
+                // stock_available ID is included in the creation response
+                Pattern stockPattern = Pattern.compile("\"stock_availables\"\\s*:\\s*\\[\\s*\\{\\s*\"id\"\\s*:\\s*(\\d+)");
+                Matcher stockMatcher = stockPattern.matcher(response);
+                if (stockMatcher.find()) {
+                    long stockId = Long.parseLong(stockMatcher.group(1));
+                    setProductQuantity(productId, stockId, 100);
+                } else {
+                    logger.warn("Could not find stock_available ID in creation response for product {}", productId);
+                }
+
+                return productId;
+            } else {
+                logger.warn("Product creation response did not contain an ID. Response: {}", response);
+                return -1;
+            }
         } catch (Exception e) {
             logger.error("Failed to create product", e);
             return -1;
+        }
+    }
+
+    /**
+     * Set the stock quantity for a product via the stock_availables endpoint.
+     *
+     * @param productId product ID
+     * @param stockId   stock_available record ID (returned in product creation response)
+     * @param quantity  quantity to set
+     */
+    private void setProductQuantity(long productId, long stockId, int quantity) {
+        try {
+            String xmlBody = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                    + "<prestashop xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n"
+                    + "  <stock_available>\n"
+                    + "    <id><![CDATA[" + stockId + "]]></id>\n"
+                    + "    <id_product><![CDATA[" + productId + "]]></id_product>\n"
+                    + "    <id_product_attribute><![CDATA[0]]></id_product_attribute>\n"
+                    + "    <id_shop><![CDATA[1]]></id_shop>\n"
+                    + "    <quantity><![CDATA[" + quantity + "]]></quantity>\n"
+                    + "    <depends_on_stock><![CDATA[0]]></depends_on_stock>\n"
+                    + "    <out_of_stock><![CDATA[0]]></out_of_stock>\n"
+                    + "  </stock_available>\n"
+                    + "</prestashop>";
+
+            makeRequest("PUT", "/stock_availables/" + stockId, xmlBody, "text/xml");
+            logger.info("Set quantity {} for product {} (stock_available {})", quantity, productId, stockId);
+        } catch (Exception e) {
+            logger.error("Failed to set quantity for product {}", productId, e);
         }
     }
 
@@ -250,7 +322,7 @@ public class PrestashopApiClient {
     }
 
     /**
-     * Delete a product via API (cleanup).
+     * Delete a product via Webservice API (cleanup).
      *
      * @param productId product ID to delete
      * @return true if successful, false otherwise
@@ -258,13 +330,11 @@ public class PrestashopApiClient {
     public boolean deleteProduct(long productId) {
         logger.info("Deleting product: {}", productId);
         try {
-            // TODO: Implement DELETE /products/{id} endpoint
-            // Parse response and return success/failure
-
-            logger.warn("deleteProduct not yet implemented");
-            return false;
+            makeRequest("DELETE", "/products/" + productId, null, null);
+            logger.info("Product {} deleted successfully", productId);
+            return true;
         } catch (Exception e) {
-            logger.error("Failed to delete product", e);
+            logger.error("Failed to delete product: {}", productId, e);
             return false;
         }
     }
