@@ -3,7 +3,7 @@ package com.prestashop.tests.tests;
 import com.prestashop.tests.base.BaseTest;
 import com.prestashop.tests.pages.LoginPage;
 import com.prestashop.tests.pages.MyAccountPage;
-import com.prestashop.tests.fixtures.PrestashopApiClient;
+import com.prestashop.tests.fixtures.PrestashopCustomerApiClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
@@ -29,7 +29,7 @@ public class LoginTest extends BaseTest {
     private static final String TEST_PASSWORD = "Test@1234!";
 
     // API client for test data setup/cleanup
-    private PrestashopApiClient apiClient;
+    private PrestashopCustomerApiClient apiClient;
     private long testCustomerId = -1;
 
     /**
@@ -45,7 +45,7 @@ public class LoginTest extends BaseTest {
         logger.info("Setting up test data for TC-002");
 
         // Initialize API client
-        apiClient = new PrestashopApiClient();
+        apiClient = new PrestashopCustomerApiClient();
 
         // Clean up any existing test account (in case previous test failed)
         apiClient.deleteCustomerByEmail(TEST_EMAIL);
