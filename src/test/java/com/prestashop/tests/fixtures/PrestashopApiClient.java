@@ -70,13 +70,43 @@ public class PrestashopApiClient {
     public long createCustomer(String email, String password) {
         logger.info("Creating customer with email: {}", email);
         try {
-            // TODO: Implement POST /customers endpoint
-            // Example: POST /api/customers with JSON body containing email, password, etc.
-            // Parse response and return customer ID
-            // Handle errors and log appropriately
+            // Build XML request body for Prestashop API
+            // Note: Prestashop API expects XML format, not JSON
+            String firstName = "Test";
+            String lastName = "Customer";
 
-            logger.warn("createCustomer not yet implemented");
-            return -1;
+            String xmlBody = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+                    "<prestashop>" +
+                    "<customer>" +
+                    "<firstname>" + firstName + "</firstname>" +
+                    "<lastname>" + lastName + "</lastname>" +
+                    "<email>" + email + "</email>" +
+                    "<passwd>" + password + "</passwd>" +
+                    "<active>1</active>" +
+                    "</customer>" +
+                    "</prestashop>";
+
+            String endpoint = "/customers?ws_key=" + apiKey + "&output_format=JSON";
+            String response = makeRequest("POST", endpoint, xmlBody);
+
+            if (response == null || response.isEmpty()) {
+                logger.warn("No response from API when creating customer with email: {}", email);
+                return -1;
+            }
+
+            // Parse JSON response to extract customer ID
+            // Example response: {"customer": {"id": 123}}
+            Pattern idPattern = Pattern.compile("\"id\"\\s*:\\s*(\\d+)");
+            Matcher matcher = idPattern.matcher(response);
+
+            if (matcher.find()) {
+                long customerId = Long.parseLong(matcher.group(1));
+                logger.info("Customer created successfully with ID {} for email: {}", customerId, email);
+                return customerId;
+            } else {
+                logger.warn("Could not extract customer ID from API response: {}", response);
+                return -1;
+            }
         } catch (Exception e) {
             logger.error("Failed to create customer", e);
             return -1;
@@ -183,6 +213,29 @@ public class PrestashopApiClient {
             return true;
         } catch (Exception e) {
             logger.error("Failed to delete customer: {}", customerId, e);
+            return false;
+        }
+    }
+
+    /**
+     * Delete a customer by email via API (cleanup).
+     * Convenience method that finds the customer ID by email and then deletes.
+     *
+     * @param email customer email address
+     * @return true if successful, false otherwise
+     */
+    public boolean deleteCustomerByEmail(String email) {
+        logger.info("Deleting customer with email: {}", email);
+        try {
+            Optional<Long> customerId = findCustomerIdByEmail(email);
+            if (customerId.isPresent()) {
+                return deleteCustomer(customerId.get());
+            } else {
+                logger.warn("Customer with email {} not found, nothing to delete", email);
+                return false;
+            }
+        } catch (Exception e) {
+            logger.error("Failed to delete customer by email: {}", email, e);
             return false;
         }
     }
