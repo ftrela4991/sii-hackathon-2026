@@ -4,6 +4,7 @@ import com.prestashop.tests.base.BaseTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -23,7 +24,6 @@ public class SampleTests extends BaseTest {
     public void testWebDriverInitialized() {
         logger.info("Running test: testWebDriverInitialized");
         assertActuallyInitialized();
-        assertTrue(true, "WebDriver should be initialized");
     }
 
     @Test
@@ -36,42 +36,39 @@ public class SampleTests extends BaseTest {
     }
 
     @Test
-    @DisplayName("Verify parallel execution - test 1")
-    public void testParallel1() {
+    @DisplayName("Verify parallel execution - thread 1")
+    public void testCanExecuteInParallelThread1() {
         logger.info("Running parallel test 1, thread: {}", Thread.currentThread().getId());
         navigateToHome();
-        // Simulate some work
-        getDriver().getTitle();
-        assertTrue(true);
+        String title = getDriver().getTitle();
+        assertNotNull(title, "Page title should be available");
+        assertTrue(title.length() > 0, "Page title should not be empty");
     }
 
     @Test
-    @DisplayName("Verify parallel execution - test 2")
-    public void testParallel2() {
+    @DisplayName("Verify parallel execution - thread 2")
+    public void testCanExecuteInParallelThread2() {
         logger.info("Running parallel test 2, thread: {}", Thread.currentThread().getId());
         navigateToHome();
-        // Simulate some work
-        getDriver().getTitle();
-        assertTrue(true);
+        String title = getDriver().getTitle();
+        assertNotNull(title, "Page title should be available");
+        assertTrue(title.length() > 0, "Page title should not be empty");
     }
 
     @Test
-    @DisplayName("Verify parallel execution - test 3")
-    public void testParallel3() {
+    @DisplayName("Verify parallel execution - thread 3")
+    public void testCanExecuteInParallelThread3() {
         logger.info("Running parallel test 3, thread: {}", Thread.currentThread().getId());
         navigateToHome();
-        // Simulate some work
-        getDriver().getTitle();
-        assertTrue(true);
+        String title = getDriver().getTitle();
+        assertNotNull(title, "Page title should be available");
+        assertTrue(title.length() > 0, "Page title should not be empty");
     }
 
     /**
      * Helper method to verify driver is actually initialized.
-     * (workaround for null checks without explicit assertions)
      */
     private void assertActuallyInitialized() {
-        if (getDriver() == null) {
-            throw new AssertionError("WebDriver should not be null");
-        }
+        assertNotNull(getDriver(), "WebDriver should not be null");
     }
 }
