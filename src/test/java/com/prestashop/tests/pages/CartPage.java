@@ -3,8 +3,12 @@ package com.prestashop.tests.pages;
 import com.prestashop.tests.base.BasePage;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.time.Duration;
 
 /**
  * Page Object for the Prestashop Cart page.
@@ -37,6 +41,9 @@ public class CartPage extends BasePage {
     // Page verification
     private static final By CART_PAGE_HEADER = By.xpath("//h1[contains(text(), 'Cart')]");
     private static final By CART_PAGE_HEADER_ALT = By.xpath("//div[@id='main']");
+
+    // Wait timeout constant
+    private static final int WAIT_TIMEOUT = 15;
 
     public CartPage(WebDriver driver) {
         super(driver);
@@ -88,6 +95,16 @@ public class CartPage extends BasePage {
                 click(REMOVE_BUTTON_ALT2);
             }
         }
+    }
+
+    /**
+     * Wait for all cart items to be removed from the page.
+     * Useful for waiting after clicking remove button (AJAX update).
+     */
+    public void waitForCartItemsToDisappear() {
+        logger.info("Waiting for cart items to disappear");
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(WAIT_TIMEOUT));
+        wait.until(ExpectedConditions.invisibilityOfElementLocated(CART_ITEM));
     }
 
     /**

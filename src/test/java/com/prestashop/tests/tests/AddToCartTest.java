@@ -2,13 +2,12 @@ package com.prestashop.tests.tests;
 
 import com.prestashop.tests.base.BaseTest;
 import com.prestashop.tests.pages.CartModalPage;
+import com.prestashop.tests.pages.HomePage;
 import com.prestashop.tests.pages.ProductPage;
 import com.prestashop.tests.assertions.CartAssertions;
 import com.prestashop.tests.assertions.AuthenticationAssertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebElement;
 
 /**
  * Test class for TC-003: Add Single Product to Cart
@@ -49,11 +48,9 @@ public class AddToCartTest extends BaseTest {
         navigateToHome();
         logger.info("On homepage — finding first available product");
 
-        // Click first product title link visible in the product listing
-        // Selector: .product-miniature .product-title a
-        WebElement firstProductLink = getDriver()
-                .findElement(By.cssSelector(".product-miniature .product-title a"));
-        String productUrl = firstProductLink.getAttribute("href");
+        // Get first product URL and navigate to it
+        HomePage homePage = new HomePage(getDriver());
+        String productUrl = homePage.getFirstProductUrl();
         logger.info("Navigating to product: {}", productUrl);
         getDriver().navigate().to(productUrl);
 

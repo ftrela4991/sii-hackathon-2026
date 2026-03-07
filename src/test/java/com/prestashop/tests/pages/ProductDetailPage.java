@@ -3,8 +3,12 @@ package com.prestashop.tests.pages;
 import com.prestashop.tests.base.BasePage;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.time.Duration;
 
 /**
  * Page Object for the Prestashop Product Detail page.
@@ -28,10 +32,16 @@ public class ProductDetailPage extends BasePage {
     private static final By ADD_TO_CART_BUTTON_ALT = By.xpath("//button[contains(text(), 'Add to cart')]");
     private static final By ADD_TO_CART_BUTTON_ALT2 = By.xpath("//button[contains(@class, 'add-to-cart')]");
 
+    // Cart update indicator (appears after adding to cart)
+    private static final By CART_BADGE = By.className("cart-badge");
+
     // Page verification element - look for add to cart button or product name
     private static final By PRODUCT_CONTAINER = By.xpath("//button[contains(@class, 'add-to-cart')]");
     private static final By PRODUCT_CONTAINER_ALT = By.xpath("//h1");
     private static final By PRODUCT_CONTAINER_ALT2 = By.xpath("//div[@id='product']");
+
+    // Wait timeout constant
+    private static final int WAIT_TIMEOUT = 15;
 
     public ProductDetailPage(WebDriver driver) {
         super(driver);
@@ -83,6 +93,16 @@ public class ProductDetailPage extends BasePage {
                 click(ADD_TO_CART_BUTTON_ALT2);
             }
         }
+    }
+
+    /**
+     * Wait for cart badge to appear (indicates product added to cart).
+     * Cart badge updates via AJAX after clicking "Add to cart".
+     */
+    public void waitForCartBadge() {
+        logger.info("Waiting for cart badge to appear");
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(WAIT_TIMEOUT));
+        wait.until(ExpectedConditions.visibilityOfElementLocated(CART_BADGE));
     }
 
     /**

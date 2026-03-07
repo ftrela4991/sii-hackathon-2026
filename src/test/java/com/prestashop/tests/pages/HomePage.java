@@ -31,6 +31,9 @@ public class HomePage extends BasePage {
     private static final By CART_TOTAL = By.xpath("//span[@class='cart-total']");
     private static final By CART_TOTAL_ALT = By.xpath("//div[@class='cart-summary']//span[@class='total']");
 
+    // Product listing
+    private static final By FIRST_PRODUCT_LINK = By.cssSelector(".product-miniature .product-title a");
+
     // Page verification
     private static final By HOME_PAGE_HEADER = By.xpath("//header");
 
@@ -122,6 +125,24 @@ public class HomePage extends BasePage {
                 return "";
             }
         }
+    }
+
+    /**
+     * Get the URL of the first visible product on the home page.
+     *
+     * @return the href attribute of the first product link
+     */
+    public String getFirstProductUrl() {
+        logger.info("Getting first product URL from home page");
+        return driver.findElement(FIRST_PRODUCT_LINK).getAttribute("href");
+    }
+
+    /**
+     * Click on the first visible product on the home page.
+     */
+    public void clickFirstProduct() {
+        logger.info("Clicking first product on home page");
+        click(FIRST_PRODUCT_LINK);
     }
 
     /**
