@@ -61,54 +61,89 @@ public class PrestashopApiClient {
     }
 
     /**
-     * Create a new customer via API.
+     * Create a new customer via the registration form endpoint.
      *
-     * @param email customer email address
+     * Uses POST /registration with application/x-www-form-urlencoded body,
+     * mirroring the browser fetch that the real registration form submits.
+     * On success the server returns a 302 redirect; the customer ID is then
+     * fetched via the REST API using the email address.
+     *
+     * Required form fields (verified against live app):
+     *   id_gender, firstname, lastname, email, password,
+     *   psgdpr=1, customer_privacy=1, submitCreate=1
+     *
+     * @param email    customer email address
      * @param password customer password
-     * @return customer ID if successful, -1 if failed
+     * @return customer ID if created successfully, -1 otherwise
      */
     public long createCustomer(String email, String password) {
-        logger.info("Creating customer with email: {}", email);
+        return createCustomer(email, password, "Test", "Customer");
+    }
+
+    /**
+     * Create a new customer via the registration form endpoint with explicit name.
+     *
+     * @param email     customer email address
+     * @param password  customer password
+     * @param firstName first name
+     * @param lastName  last name
+     * @return customer ID if created successfully, -1 otherwise
+     */
+    public long createCustomer(String email, String password, String firstName, String lastName) {
+        logger.info("Creating customer via registration form: {}", email);
         try {
-            // Build XML request body for Prestashop API
-            // Note: Prestashop API expects XML format, not JSON
-            String firstName = "Test";
-            String lastName = "Customer";
+            String registrationUrl = ConfigLoader.getProperty("base.url", "http://145.239.29.235/")
+                    + "/registration";
 
-            String xmlBody = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
-                    "<prestashop>" +
-                    "<customer>" +
-                    "<firstname>" + firstName + "</firstname>" +
-                    "<lastname>" + lastName + "</lastname>" +
-                    "<email>" + email + "</email>" +
-                    "<passwd>" + password + "</passwd>" +
-                    "<active>1</active>" +
-                    "</customer>" +
-                    "</prestashop>";
+            // Build form body identical to the browser POST observed via DevTools:
+            // id_gender=1&firstname=...&lastname=...&email=...&password=...
+            // &birthday=&psgdpr=1&customer_privacy=1&submitCreate=1
+            String formBody = "id_gender=1"
+                    + "&firstname=" + URLEncoder.encode(firstName, StandardCharsets.UTF_8)
+                    + "&lastname="  + URLEncoder.encode(lastName,  StandardCharsets.UTF_8)
+                    + "&email="     + URLEncoder.encode(email,     StandardCharsets.UTF_8)
+                    + "&password="  + URLEncoder.encode(password,  StandardCharsets.UTF_8)
+                    + "&birthday="
+                    + "&psgdpr=1"
+                    + "&customer_privacy=1"
+                    + "&submitCreate=1";
 
-            String endpoint = "/customers?ws_key=" + apiKey + "&output_format=JSON";
-            String response = makeRequest("POST", endpoint, xmlBody);
+            // Do NOT follow redirects — successful registration returns HTTP 302.
+            // If we follow the redirect we lose the status code and cannot detect errors.
+            HttpClient nonRedirectingClient = HttpClient.newBuilder()
+                    .followRedirects(HttpClient.Redirect.NEVER)
+                    .build();
 
-            if (response == null || response.isEmpty()) {
-                logger.warn("No response from API when creating customer with email: {}", email);
-                return -1;
-            }
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(new URI(registrationUrl))
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .POST(HttpRequest.BodyPublishers.ofString(formBody))
+                    .build();
 
-            // Parse JSON response to extract customer ID
-            // Example response: {"customer": {"id": 123}}
-            Pattern idPattern = Pattern.compile("\"id\"\\s*:\\s*(\\d+)");
-            Matcher matcher = idPattern.matcher(response);
+            HttpResponse<String> response = nonRedirectingClient.send(
+                    request, HttpResponse.BodyHandlers.ofString());
 
-            if (matcher.find()) {
-                long customerId = Long.parseLong(matcher.group(1));
-                logger.info("Customer created successfully with ID {} for email: {}", customerId, email);
-                return customerId;
+            logger.debug("Registration response status: {}", response.statusCode());
+
+            // Prestashop returns 302 on successful registration
+            if (response.statusCode() == 302 || response.statusCode() == 301) {
+                // Retrieve the customer ID from the REST API using the email
+                Optional<Long> customerId = findCustomerIdByEmail(email);
+                if (customerId.isPresent()) {
+                    logger.info("Customer created with ID {} for email: {}", customerId.get(), email);
+                    return customerId.get();
+                } else {
+                    logger.warn("Registration succeeded ({}), but customer ID not found for: {}",
+                            response.statusCode(), email);
+                    return -1;
+                }
             } else {
-                logger.warn("Could not extract customer ID from API response: {}", response);
+                logger.error("Registration failed — unexpected status {} for email: {}",
+                        response.statusCode(), email);
                 return -1;
             }
         } catch (Exception e) {
-            logger.error("Failed to create customer", e);
+            logger.error("Failed to create customer via registration form", e);
             return -1;
         }
     }

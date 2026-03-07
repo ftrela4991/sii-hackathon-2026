@@ -2,15 +2,20 @@ package com.prestashop.tests.tests;
 
 import com.prestashop.tests.base.BaseTest;
 import com.prestashop.tests.pages.LoginPage;
-import com.prestashop.tests.pages.MyAccountPage;
-import com.prestashop.tests.fixtures.PrestashopCustomerApiClient;
+import com.prestashop.tests.fixtures.PrestashopApiClient;
+import com.prestashop.tests.utils.ConfigLoader;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.openqa.selenium.By;
+import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+
+import java.time.Duration;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Test class for customer login scenarios (TC-002).
@@ -29,7 +34,7 @@ public class LoginTest extends BaseTest {
     private static final String TEST_PASSWORD = "Test@1234!";
 
     // API client for test data setup/cleanup
-    private PrestashopCustomerApiClient apiClient;
+    private PrestashopApiClient apiClient;
     private long testCustomerId = -1;
 
     /**
@@ -45,7 +50,7 @@ public class LoginTest extends BaseTest {
         logger.info("Setting up test data for TC-002");
 
         // Initialize API client
-        apiClient = new PrestashopCustomerApiClient();
+        apiClient = new PrestashopApiClient();
 
         // Clean up any existing test account (in case previous test failed)
         apiClient.deleteCustomerByEmail(TEST_EMAIL);
@@ -87,7 +92,7 @@ public class LoginTest extends BaseTest {
      * TC-002: Login with Valid Credentials
      *
      * Scenario: User logs in with valid email and password
-     * Expected Result: User is redirected to /my-account page with name visible in header
+     * Expected Result: User remains on homepage with "Sign out" and full name visible in header
      *
      * Test Steps:
      * 1. Navigate to login page (/login)
@@ -95,8 +100,8 @@ public class LoginTest extends BaseTest {
      * 3. Enter valid email address
      * 4. Enter valid password
      * 5. Click Sign in button
-     * 6. Verify user is redirected to /my-account
-     * 7. Verify customer name and sign-out link are visible
+     * 6. Verify user remains on homepage
+     * 7. Verify Sign out link and customer name are visible in header
      */
     @Test
     @DisplayName("TC-002: Login with valid credentials (existing_user@test.com)")
@@ -114,36 +119,44 @@ public class LoginTest extends BaseTest {
         logger.info("Performing login with credentials");
         loginPage.login(TEST_EMAIL, TEST_PASSWORD);
 
-        // Step 6: Verify redirection to /my-account
-        MyAccountPage myAccountPage = new MyAccountPage(getDriver());
-        myAccountPage.assertLoaded();
+        // Wait for Sign out link to appear in header (confirms session + page load)
+        // Actual selector: a.logout (class="logout hidden-sm-down", href="?mylogout=")
+        WebDriverWait wait = new WebDriverWait(getDriver(), Duration.ofSeconds(15));
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("a.logout")));
+        logger.info("Sign out link appeared - login complete");
 
+        // Step 6: Verify user remains on homepage (not redirected to /my-account)
+        String baseUrl = ConfigLoader.getProperty("base.url");
         String currentUrl = getDriver().getCurrentUrl();
         logger.info("Current URL after login: {}", currentUrl);
         assertTrue(
-            currentUrl.contains("/my-account"),
-            "User should be redirected to /my-account page after successful login"
+            currentUrl.equals(baseUrl + "/") || currentUrl.equals(baseUrl.replaceAll("/$", "")),
+            "User should remain on homepage after login, but was: " + currentUrl
         );
+        logger.info("✓ R-1 Assertion passed: URL is homepage");
 
-        // Step 7: Verify customer name and sign-out link are visible
-        logger.info("Verifying account information is displayed");
-
-        // Verify sign-out link is visible (confirms user is logged in)
-        boolean signOutVisible = myAccountPage.isSignOutVisible();
+        // Step 7a: Verify Sign out link is visible (authenticated state)
+        // Actual selector: a.logout (class="logout hidden-sm-down")
+        WebElement signOutLink = getDriver().findElement(By.cssSelector("a.logout"));
         assertTrue(
-            signOutVisible,
+            signOutLink.isDisplayed(),
             "Sign out link should be visible in header after successful login"
         );
+        logger.info("✓ R-2 Assertion passed: Sign out link is visible");
 
-        // Verify customer name is visible
-        String greetingText = myAccountPage.getGreetingText();
-        assertNotNull(greetingText, "Greeting text should not be null");
+        // Step 7b: Verify customer full name is visible in header next to Sign out
+        // Actual selector: .user-info a.account span.hidden-sm-down
+        // createCustomer(TEST_EMAIL, TEST_PASSWORD) defaults to firstName="Test", lastName="Customer"
+        WebElement userNameEl = getDriver().findElement(
+            By.cssSelector(".user-info a.account span.hidden-sm-down"));
+        String userName = userNameEl.getText().trim();
+        logger.info("User name in header: {}", userName);
         assertTrue(
-            greetingText.length() > 0,
-            "Greeting text should contain customer name after successful login"
+            userName.equalsIgnoreCase("Test Customer"),
+            "Header should display 'Test Customer' after login, but found: '" + userName + "'"
         );
+        logger.info("✓ R-3 Assertion passed: Header displays 'Test Customer'");
 
         logger.info("TC-002: Login test completed successfully");
-        logger.info("Greeting text: {}", greetingText);
     }
 }
