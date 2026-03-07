@@ -20,6 +20,7 @@
         <selenium.version>4.15.0</selenium.version>
         <junit.version>5.9.3</junit.version>
         <webdrivermanager.version>5.6.3</webdrivermanager.version>
+        <slf4j.version>2.0.7</slf4j.version>
     </properties>
 
     <dependencies>
@@ -28,6 +29,7 @@
             <groupId>org.seleniumhq.selenium</groupId>
             <artifactId>selenium-java</artifactId>
             <version>${selenium.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <!-- JUnit 5 (Jupiter) -->
@@ -55,12 +57,12 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>2.0.7</version>
+            <version>${slf4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
-            <version>2.0.7</version>
+            <version>${slf4j.version}</version>
         </dependency>
     </dependencies>
 
@@ -92,6 +94,13 @@
                     <!-- Fail if no tests found -->
                     <failIfNoTests>false</failIfNoTests>
                 </configuration>
+            </plugin>
+
+            <!-- Maven Surefire Report Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-report-plugin</artifactId>
+                <version>3.0.0-M9</version>
             </plugin>
         </plugins>
     </build>
