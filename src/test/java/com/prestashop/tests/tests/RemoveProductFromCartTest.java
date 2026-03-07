@@ -8,6 +8,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.openqa.selenium.By;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+
+import java.time.Duration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -20,6 +25,7 @@ public class RemoveProductFromCartTest extends BaseTest {
 
     private static final String PRODUCT_NAME = "Test Product TC-004";
     private static final double PRODUCT_PRICE = 19.99;
+    private static final int WAIT_TIMEOUT = 15;
 
     private PrestashopProductApiClient apiClient;
     private long testProductId = -1;
@@ -46,11 +52,11 @@ public class RemoveProductFromCartTest extends BaseTest {
      * TC-004: Remove Product from Cart
      *
      * Scenario: User removes a product from cart
-     * Expected: Product is removed, cart counter resets, empty cart message shown
+     * Expected: Product is removed, cart counter resets to 0
      */
     @Test
-    @DisplayName("TC-004: Remove product from cart")
-    public void testRemoveProductFromCart() {
+    @DisplayName("TC-004: Should remove product from cart successfully")
+    public void shouldRemoveProductFromCart() {
         logger.info("Starting TC-004: Remove product from cart");
 
         if (testProductId <= 0) {
@@ -67,12 +73,9 @@ public class RemoveProductFromCartTest extends BaseTest {
         logger.info("Clicking add to cart button");
         productPage.clickAddToCart();
 
-        // Wait for cart to update
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        // Wait for cart to update via AJAX
+        WebDriverWait wait = new WebDriverWait(getDriver(), Duration.ofSeconds(WAIT_TIMEOUT));
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.className("cart-badge")));
 
         // Navigate to cart page
         navigateTo("/cart");
@@ -87,12 +90,9 @@ public class RemoveProductFromCartTest extends BaseTest {
         logger.info("Removing product from cart");
         cartPage.removeProduct();
 
-        // Wait for cart to update
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        // Wait for cart to update after removal
+        wait = new WebDriverWait(getDriver(), Duration.ofSeconds(WAIT_TIMEOUT));
+        wait.until(ExpectedConditions.invisibilityOfElementLocated(By.className("cart-item")));
 
         // Verify cart is empty
         int finalCount = cartPage.getCartItemCount();

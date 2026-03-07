@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("TC-001: Register New Customer Successfully")
 public class RegistrationTest extends BaseTest {
 
+    private static final int WAIT_TIMEOUT = 15;
     private String testEmail;
     private PrestashopApiClient apiClient;
 
@@ -66,8 +67,8 @@ public class RegistrationTest extends BaseTest {
         // ============================================================
         // ARRANGE: Navigate to registration page
         // ============================================================
-        String baseUrl = ConfigLoader.getProperty("base.url", "http://145.239.29.235/");
-        getDriver().navigate().to(baseUrl + "registration");
+        String baseUrl = ConfigLoader.getProperty("base.url");
+        getDriver().navigate().to(baseUrl + "/registration");
         logger.info("Navigated to registration page");
 
         RegistrationPage registrationPage = new RegistrationPage(getDriver());
@@ -96,7 +97,7 @@ public class RegistrationTest extends BaseTest {
 
         // Wait for the Sign out link to appear in the header (confirms session + page load)
         // Actual selector: a.logout (class="logout hidden-sm-down", href="?mylogout=")
-        WebDriverWait wait = new WebDriverWait(getDriver(), Duration.ofSeconds(15));
+        WebDriverWait wait = new WebDriverWait(getDriver(), Duration.ofSeconds(WAIT_TIMEOUT));
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("a.logout")));
         logger.info("Sign out link appeared - page transition complete");
 

@@ -20,16 +20,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class SampleTests extends BaseTest {
 
     @Test
-    @DisplayName("Verify WebDriver is initialized")
-    public void testWebDriverInitialized() {
-        logger.info("Running test: testWebDriverInitialized");
+    @DisplayName("Should initialize WebDriver successfully")
+    public void shouldInitializeWebDriver() {
+        logger.info("Running test: shouldInitializeWebDriver");
         assertActuallyInitialized();
     }
 
     @Test
-    @DisplayName("Verify can navigate to URL")
-    public void testCanNavigateToUrl() {
-        logger.info("Running test: testCanNavigateToUrl");
+    @DisplayName("Should navigate to home URL successfully")
+    public void shouldNavigateToHomeUrl() {
+        logger.info("Running test: shouldNavigateToHomeUrl");
         navigateToHome();
         String currentUrl = getDriver().getCurrentUrl();
         assertNotNull(currentUrl, "Current URL should not be null");
@@ -37,8 +37,8 @@ public class SampleTests extends BaseTest {
     }
 
     @Test
-    @DisplayName("Verify parallel execution - thread 1")
-    public void testCanExecuteInParallelThread1() {
+    @DisplayName("Should execute in parallel - thread 1")
+    public void shouldExecuteInParallel1() {
         logger.info("Running parallel test 1, thread: {}", Thread.currentThread().getId());
         navigateToHome();
         String title = getDriver().getTitle();
@@ -47,8 +47,8 @@ public class SampleTests extends BaseTest {
     }
 
     @Test
-    @DisplayName("Verify parallel execution - thread 2")
-    public void testCanExecuteInParallelThread2() {
+    @DisplayName("Should execute in parallel - thread 2")
+    public void shouldExecuteInParallel2() {
         logger.info("Running parallel test 2, thread: {}", Thread.currentThread().getId());
         navigateToHome();
         String title = getDriver().getTitle();
@@ -57,8 +57,8 @@ public class SampleTests extends BaseTest {
     }
 
     @Test
-    @DisplayName("Verify parallel execution - thread 3")
-    public void testCanExecuteInParallelThread3() {
+    @DisplayName("Should execute in parallel - thread 3")
+    public void shouldExecuteInParallel3() {
         logger.info("Running parallel test 3, thread: {}", Thread.currentThread().getId());
         navigateToHome();
         String title = getDriver().getTitle();

@@ -52,15 +52,15 @@ public class PrestashopCustomerApiClient {
             String idGender = "1";
 
             String xmlBody = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
-                    "<prestashop>" +
+                    "<prestashop xmlns:xlink=\"http://www.w3.org/1999/xlink\">" +
                     "<customer>" +
-                    "<id_gender>" + idGender + "</id_gender>" +
-                    "<firstname>" + firstName + "</firstname>" +
-                    "<lastname>" + lastName + "</lastname>" +
-                    "<email>" + email + "</email>" +
-                    "<passwd>" + password + "</passwd>" +
-                    "<id_default_group>3</id_default_group>" +
-                    "<active>1</active>" +
+                    "<id_gender><![CDATA[" + idGender + "]]></id_gender>" +
+                    "<firstname><![CDATA[" + firstName + "]]></firstname>" +
+                    "<lastname><![CDATA[" + lastName + "]]></lastname>" +
+                    "<email><![CDATA[" + email + "]]></email>" +
+                    "<passwd><![CDATA[" + password + "]]></passwd>" +
+                    "<id_default_group><![CDATA[3]]></id_default_group>" +
+                    "<active><![CDATA[1]]></active>" +
                     "</customer>" +
                     "</prestashop>";
 

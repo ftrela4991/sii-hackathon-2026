@@ -32,6 +32,7 @@ public class LoginTest extends BaseTest {
     // Test data constants
     private static final String TEST_EMAIL = "existing_user@test.com";
     private static final String TEST_PASSWORD = "Test@1234!";
+    private static final int WAIT_TIMEOUT = 15;
 
     // API client for test data setup/cleanup
     private PrestashopApiClient apiClient;
@@ -104,8 +105,8 @@ public class LoginTest extends BaseTest {
      * 7. Verify Sign out link and customer name are visible in header
      */
     @Test
-    @DisplayName("TC-002: Login with valid credentials (existing_user@test.com)")
-    public void testLoginWithValidCredentials() {
+    @DisplayName("TC-002: Should login successfully with valid credentials")
+    public void shouldLoginWithValidCredentials() {
         logger.info("Starting TC-002: Login with valid credentials");
 
         // Step 1: Navigate to login page
@@ -121,7 +122,7 @@ public class LoginTest extends BaseTest {
 
         // Wait for Sign out link to appear in header (confirms session + page load)
         // Actual selector: a.logout (class="logout hidden-sm-down", href="?mylogout=")
-        WebDriverWait wait = new WebDriverWait(getDriver(), Duration.ofSeconds(15));
+        WebDriverWait wait = new WebDriverWait(getDriver(), Duration.ofSeconds(WAIT_TIMEOUT));
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("a.logout")));
         logger.info("Sign out link appeared - login complete");
 
