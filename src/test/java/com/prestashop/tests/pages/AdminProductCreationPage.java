@@ -4,7 +4,6 @@ import com.prestashop.tests.base.BasePage;
 import com.prestashop.tests.utils.ConfigLoader;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,12 +19,6 @@ public class AdminProductCreationPage extends BasePage {
     );
     private static final By SUCCESS_ALERT = By.xpath(
             "//*[contains(@class,'alert-success') or contains(@class,'growl-success')]"
-    );
-
-    // Fallback locators used when the primary locator is not found
-    private static final By SAVE_BUTTON_FALLBACK = By.cssSelector("button.btn-primary[type='submit']");
-    private static final By RETAIL_PRICE_INPUT_FALLBACK = By.cssSelector(
-            "input[name='product[pricing][retail_price][price_tax_excluded]']"
     );
 
     public AdminProductCreationPage(WebDriver driver) {
@@ -69,12 +62,7 @@ public class AdminProductCreationPage extends BasePage {
      */
     public void setRetailPrice(String price) {
         logger.info("Setting retail price: {}", price);
-        try {
-            sendKeys(RETAIL_PRICE_INPUT, price);
-        } catch (Exception e) {
-            logger.warn("Primary retail price locator failed, trying fallback. Cause: {}", e.getMessage());
-            sendKeys(RETAIL_PRICE_INPUT_FALLBACK, price);
-        }
+        sendKeys(RETAIL_PRICE_INPUT, price);
     }
 
     /**
@@ -92,19 +80,9 @@ public class AdminProductCreationPage extends BasePage {
      */
     public void saveProduct() {
         logger.info("Clicking Save button");
-        try {
-            click(SAVE_BUTTON);
-        } catch (Exception e) {
-            logger.warn("Primary Save button locator failed, trying fallback. Cause: {}", e.getMessage());
-            click(SAVE_BUTTON_FALLBACK);
-        }
-
-        try {
-            wait.until(ExpectedConditions.visibilityOfElementLocated(SUCCESS_ALERT));
-            logger.info("Product saved successfully (success alert appeared)");
-        } catch (Exception e) {
-            logger.warn("Success alert not found after save - assuming save completed. Cause: {}", e.getMessage());
-        }
+        click(SAVE_BUTTON);
+        waitForElement(SUCCESS_ALERT);
+        logger.info("Product saved successfully (success alert appeared)");
     }
 
     /**
