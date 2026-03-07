@@ -57,26 +57,32 @@ public abstract class BaseTest {
     public void setUp() {
         logger.info("Setting up WebDriver for thread: {}", Thread.currentThread().getId());
 
-        // Get browser type from config
-        String browserType = ConfigLoader.getProperty("browser.type", "chrome");
+        try {
+            // Get browser type from config
+            String browserType = ConfigLoader.getProperty("browser.type", "chrome");
 
-        // Create driver via factory and store in ThreadLocal
-        WebDriver driver = DriverFactory.createDriver(browserType);
+            // Create driver via factory and store in ThreadLocal
+            WebDriver driver = DriverFactory.createDriver(browserType);
 
-        // Set implicit timeout
-        int implicitTimeout = ConfigLoader.getIntProperty("timeout.implicit", 10);
-        driver.manage().timeouts().implicitlyWait(
-            java.time.Duration.ofSeconds(implicitTimeout));
+            // Set implicit timeout
+            int implicitTimeout = ConfigLoader.getIntProperty("timeout.implicit", 10);
+            driver.manage().timeouts().implicitlyWait(
+                java.time.Duration.ofSeconds(implicitTimeout));
 
-        // Set page load timeout
-        int pageLoadTimeout = ConfigLoader.getIntProperty("timeout.page.load", 30);
-        driver.manage().timeouts().pageLoadTimeout(
-            java.time.Duration.ofSeconds(pageLoadTimeout));
+            // Set page load timeout
+            int pageLoadTimeout = ConfigLoader.getIntProperty("timeout.page.load", 30);
+            driver.manage().timeouts().pageLoadTimeout(
+                java.time.Duration.ofSeconds(pageLoadTimeout));
 
-        // Store driver in ThreadLocal
-        driverThreadLocal.set(driver);
+            // Store driver in ThreadLocal
+            driverThreadLocal.set(driver);
 
-        logger.info("WebDriver initialized for thread: {}", Thread.currentThread().getId());
+            logger.info("WebDriver initialized for thread: {}", Thread.currentThread().getId());
+        } catch (Exception e) {
+            logger.error("Failed to initialize WebDriver", e);
+            driverThreadLocal.remove();  // Ensure cleanup on failure
+            throw e;  // Fail the test setup
+        }
     }
 
     /**
@@ -92,32 +98,64 @@ public abstract class BaseTest {
 
             // Note: JUnit 5's TestInfo could be injected to get test name/result,
             // but for simplicity, we always try to take a screenshot
-            String shouldScreenshot = ConfigLoader.getProperty("screenshot.on.failure", "true");
-            if (Boolean.parseBoolean(shouldScreenshot)) {
+            if (shouldTakeScreenshot()) {
                 takeScreenshot("test_" + System.currentTimeMillis());
             }
 
             // Quit driver and clean up ThreadLocal
             DriverFactory.closeDriver(driver);
             driverThreadLocal.remove();
+        } else {
+            logger.warn("WebDriver is null during tearDown - may have been already cleaned up");
         }
 
         logger.info("WebDriver cleanup complete for thread: {}", Thread.currentThread().getId());
     }
 
     /**
+     * Check if screenshots should be taken based on configuration.
+     * Validates the screenshot.on.failure config value.
+     *
+     * @return true if screenshots should be taken, false otherwise
+     */
+    private boolean shouldTakeScreenshot() {
+        String value = ConfigLoader.getProperty("screenshot.on.failure", "true");
+        // Validate the configuration value
+        if (value == null || !value.trim().equalsIgnoreCase("true")) {
+            if (!value.equalsIgnoreCase("false")) {
+                logger.warn("Invalid screenshot.on.failure config value: {}. Use 'true' or 'false'", value);
+            }
+            return false;
+        }
+        return true;
+    }
+
+    /**
      * Take a screenshot and save to target/screenshots/ directory.
+     * Creates a timestamped PNG file with the specified filename prefix.
+     *
+     * @param filename the filename prefix (timestamp will be appended)
      */
     protected void takeScreenshot(String filename) {
         try {
+            WebDriver driver = getDriver();
+            if (driver == null) {
+                logger.warn("Cannot take screenshot: WebDriver is null");
+                return;
+            }
+
             String screenshotPath = ConfigLoader.getProperty("screenshot.path", "target/screenshots/");
             File directory = new File(screenshotPath);
 
             if (!directory.exists()) {
-                Files.createDirectories(Paths.get(screenshotPath));
+                try {
+                    Files.createDirectories(Paths.get(screenshotPath));
+                } catch (IOException e) {
+                    logger.error("Failed to create screenshot directory: {}", screenshotPath, e);
+                    return;
+                }
             }
 
-            WebDriver driver = getDriver();
             if (driver instanceof TakesScreenshot) {
                 TakesScreenshot screenshot = (TakesScreenshot) driver;
                 File sourceFile = screenshot.getScreenshotAs(OutputType.FILE);
@@ -127,18 +165,30 @@ public abstract class BaseTest {
 
                 Files.copy(sourceFile.toPath(), Paths.get(fullFilename));
                 logger.info("Screenshot saved: {}", fullFilename);
+
+                // Clean up temporary file
+                if (!sourceFile.delete()) {
+                    logger.warn("Failed to delete temporary screenshot file: {}", sourceFile.getAbsolutePath());
+                }
             }
         } catch (IOException e) {
-            logger.warn("Failed to take screenshot: {}", e.getMessage());
+            logger.warn("Failed to take screenshot: {}", filename, e);
         }
     }
 
     /**
      * Navigate to base URL (helper method).
+     * Requires WebDriver to be initialized (from @BeforeEach).
+     *
+     * @throws IllegalStateException if WebDriver is not initialized
      */
     protected void navigateToHome() {
+        WebDriver driver = getDriver();
+        if (driver == null) {
+            throw new IllegalStateException("WebDriver is not initialized. Ensure setUp() has completed.");
+        }
         String baseUrl = ConfigLoader.getProperty("base.url", "https://demo.prestashop.com");
-        getDriver().navigate().to(baseUrl);
+        driver.navigate().to(baseUrl);
         logger.info("Navigated to: {}", baseUrl);
     }
 }
