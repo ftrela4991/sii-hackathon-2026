@@ -27,6 +27,8 @@ public class LoginPage extends BasePage {
     // Locators for header elements (post-login verification)
     private static final By SIGN_OUT_LINK = By.cssSelector("a.logout");
     private static final By USER_NAME_DISPLAY = By.cssSelector(".user-info a.account span.hidden-sm-down");
+    // Alert error locator (shown on authentication failure)
+    private static final By ALERT_ERROR = By.cssSelector(".alert.alert-danger");
 
     public LoginPage(WebDriver driver) {
         super(driver);
@@ -71,6 +73,27 @@ public class LoginPage extends BasePage {
         enterEmail(email);
         enterPassword(password);
         clickSignIn();
+    }
+
+    /**
+     * Check if the authentication error alert is visible on the page.
+     * Appears when Prestashop rejects the login (e.g., wrong password or non-existent email).
+     *
+     * @return true if authentication error is visible, false otherwise
+     */
+    public boolean isAuthenticationErrorVisible() {
+        logger.info("Checking if authentication error alert is visible");
+        return isElementVisible(ALERT_ERROR);
+    }
+
+    /**
+     * Get the text of the authentication error alert.
+     *
+     * @return authentication error alert text
+     */
+    public String getAuthenticationErrorText() {
+        logger.info("Getting authentication error alert text");
+        return getText(ALERT_ERROR);
     }
 
     /**

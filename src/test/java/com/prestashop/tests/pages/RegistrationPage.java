@@ -34,6 +34,8 @@ public class RegistrationPage extends BasePage {
     // Header locators (for post-registration verification)
     private static final By SIGN_OUT_LINK = By.cssSelector("a.logout");
     private static final By USER_NAME_DISPLAY = By.cssSelector(".user-info a.account span.hidden-sm-down");
+    // Alert error locator (shown when registration fails, e.g. duplicate email)
+    private static final By ALERT_ERROR = By.cssSelector(".alert.alert-danger");
 
     public RegistrationPage(WebDriver driver) {
         super(driver);
@@ -133,6 +135,27 @@ public class RegistrationPage extends BasePage {
     public boolean isSignOutLinkVisible() {
         logger.info("Checking if Sign out link is visible");
         return isElementVisible(SIGN_OUT_LINK);
+    }
+
+    /**
+     * Check if the registration error alert is visible on the page.
+     * Appears when Prestashop rejects the registration (e.g., duplicate email).
+     *
+     * @return true if error alert is visible, false otherwise
+     */
+    public boolean isErrorAlertVisible() {
+        logger.info("Checking if registration error alert is visible");
+        return isElementVisible(ALERT_ERROR);
+    }
+
+    /**
+     * Get the text content of the registration error alert.
+     *
+     * @return error alert text
+     */
+    public String getAlertErrorText() {
+        logger.info("Getting registration error alert text");
+        return getText(ALERT_ERROR);
     }
 
     /**

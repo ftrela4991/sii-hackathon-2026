@@ -3,6 +3,8 @@ package com.prestashop.tests.assertions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -71,6 +73,24 @@ public class CartAssertions {
      * @param productName the name of the product to verify
      * @throws AssertionError if product is not found in cart
      */
+    public static void assertGrandTotalMatchesLineItemSum(String grandTotal, List<String> lineTotals) {
+        double expectedSum = lineTotals.stream()
+                .mapToDouble(CartAssertions::parseCurrencyAmount)
+                .sum();
+        double actualGrandTotal = parseCurrencyAmount(grandTotal);
+        assertEquals(expectedSum, actualGrandTotal, 0.01,
+                "Grand total '" + grandTotal + "' should equal sum of line totals " + lineTotals);
+    }
+
+    public static void assertLineTotal(String actual, String expected) {
+        assertEquals(expected, actual,
+                "Expected line total '" + expected + "', but was: '" + actual + "'");
+    }
+
+    private static double parseCurrencyAmount(String value) {
+        return Double.parseDouble(value.replaceAll("[^0-9.]", ""));
+    }
+
     public static void assertProductInCart(boolean isPresent, String productName) {
         logger.info("Asserting product '{}' is in cart", productName);
         assertTrue(isPresent,
